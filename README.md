@@ -33,6 +33,6 @@
 Tema standart WordPress fonksiyonlarını kullanır ve ek bağımlılık gerektirmez. Stil ve script dosyalarını `assets` klasörü üzerinden düzenleyebilirsiniz.
 
 ## Çakışma Kontrolleri
-- Haber Yönetimi panelindeki **Birleştirme Kontrolü** kartı, tema dosyalarında `<<<<<<<` gibi birleştirme işaretlerini tarar.
+- Haber Yönetimi panelindeki **Birleştirme Kontrolü** kartı, tema dosyalarında standart birleştirme işaretlerini tarar.
 - Paneldeki **Taramayı Yenile** düğmesi, taramayı anında yenileyerek işaretlerin temizlendiğini doğrulamanızı sağlar.
 - Aynı bilgiler yönetim panellerinde uyarı olarak da gösterilir; uyarılar kaybolana kadar dosyalardaki işaretleri temizlemeniz gerekir.
