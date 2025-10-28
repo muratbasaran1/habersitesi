@@ -1,13 +1,10 @@
 # Haber Sitesi WordPress Teması
 
- Mobil ve masaüstü haber deneyimini aynı anda hedefleyen bu tema, TVTURK.net'in profesyonel sunumundan ilham alan kırmızı-siyah paletiyle büyük manşet alanlarını, kategori panellerini ve geniş yan sütun bileşenlerini bir araya getirir.
+ Mobil haber okuma deneyimini öne çıkaran bu tema, CNN'in hızlı haber akışından ilham alan kırmızı tonlarını, yumuşak kart gölgelerini ve dokunmatik etkileşimleri bir araya getirir.
 
 ## Özellikler
 - Yapışkan mobil üst bilgi, yatay kaydırmalı kategori şeridi ve otomatik dönen son dakika bandı
-- Piyasa göstergeleri ve hava durumu etiketleriyle açılan üst çubuk, TV Türk tarzı manşet slider'ı ve sağda kart liste alanıyla masaüstü odaklı ana sayfa
-- Manşet slider'ında otomatik döngü, klavye yön tuşu desteği, paylaş/kaydet butonları ve anlık görüntülenme sayaçları
-- Editör seçkisini kategori panellerine bölen 3 kolonlu ızgara, Haber Merkezi kartları ve canlı haber akışı zaman çizgisi
-- Editör Masası & Yorumlar bölümüyle çok yorumlanan başlıklar için koyu arayüzlü vitrin, yan sütunda trendler/hava durumu/bülten kartları
+- Manşet kahraman kartı, kaydırmalı liste haberleri, en çok okunanlar ve hava durumu kartlarıyla mobil ana sayfa düzeni
 - Kahraman manşette cihaz içi paylaşım, favorilere kaydetme ve gerçek zamanlı görüntülenme sayaçlarıyla etkileşimli haber kartları
 - Özelleştirici üzerinden şehir, sıcaklık ve durum bilgisi tanımlanabilen hava durumu etiketleri
 - Tekil haberlerde okuma süresi, paylaşım bağlantıları, etiket rozetleri ve ilgili haber önerileri
