@@ -12,6 +12,7 @@
 - Gutenberg editöründe uyumlu tipografi ve buton stilleri
 - Muhabir, yazar ve editör rollerini yönetmeye yarayan, filtre ve metrik destekli Haber Yönetimi paneli
 - Haber Yönetimi panelinden kategori oluşturma, içerik durumlarını izleme, okunma trendlerini takip etme ve temel WordPress ayar ekranlarına hızlı erişim
+- Çakışma işaretlerini tarayan ve “Taramayı Yenile” bağlantısıyla dosyaları yeniden kontrol etmenizi sağlayan yönetim paneli kartı
 - Alt bilgi bileşen alanı ve ikincil menü desteği
 
 ## Kurulum
@@ -26,3 +27,8 @@
 
 ## Geliştirme
 Tema standart WordPress fonksiyonlarını kullanır ve ek bağımlılık gerektirmez. Stil ve script dosyalarını `assets` klasörü üzerinden düzenleyebilirsiniz.
+
+## Çakışma Kontrolleri
+- Haber Yönetimi panelindeki **Birleştirme Kontrolü** kartı, tema dosyalarında `<<<<<<<` gibi birleştirme işaretlerini tarar.
+- Paneldeki **Taramayı Yenile** düğmesi, taramayı anında yenileyerek işaretlerin temizlendiğini doğrulamanızı sağlar.
+- Aynı bilgiler yönetim panellerinde uyarı olarak da gösterilir; uyarılar kaybolana kadar dosyalardaki işaretleri temizlemeniz gerekir.

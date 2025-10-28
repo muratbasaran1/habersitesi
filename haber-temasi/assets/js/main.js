@@ -152,6 +152,122 @@
             });
         }
 
+        const sliderContainers = $('[data-front-slider]');
+
+        if (sliderContainers.length) {
+            const shouldAutoRotate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            sliderContainers.each(function () {
+                const container = $(this);
+                const tabs = container.find('.front-slider__thumb');
+                const panels = container.find('.front-slider__panel');
+
+                if (!tabs.length || !panels.length) {
+                    return;
+                }
+
+                let activeIndex = tabs.filter('.is-active').first().data('index');
+
+                if (typeof activeIndex === 'undefined') {
+                    activeIndex = 0;
+                }
+
+                const setActive = function (index, shouldAnnounce) {
+                    if (!panels.length) {
+                        return;
+                    }
+
+                    const safeIndex = ((index % panels.length) + panels.length) % panels.length;
+
+                    tabs
+                        .removeClass('is-active')
+                        .attr('aria-selected', 'false');
+
+                    panels
+                        .removeClass('is-active')
+                        .attr('aria-hidden', 'true')
+                        .attr('tabindex', '-1');
+
+                    const currentTab = tabs.eq(safeIndex);
+                    const currentPanel = panels.eq(safeIndex);
+
+                    currentTab
+                        .addClass('is-active')
+                        .attr('aria-selected', 'true');
+
+                    currentPanel
+                        .addClass('is-active')
+                        .attr('aria-hidden', 'false')
+                        .attr('tabindex', '0');
+
+                    activeIndex = safeIndex;
+
+                    if (shouldAnnounce) {
+                        const headline = currentTab.find('.front-slider__thumb-title').text().trim();
+
+                        if (headline) {
+                            announce(headline);
+                        }
+                    }
+                };
+
+                let rotationTimer = null;
+
+                const startAuto = function () {
+                    if (!shouldAutoRotate || panels.length <= 1) {
+                        return;
+                    }
+
+                    stopAuto();
+
+                    rotationTimer = window.setInterval(function () {
+                        setActive(activeIndex + 1, false);
+                    }, 8000);
+                };
+
+                const stopAuto = function () {
+                    if (rotationTimer) {
+                        window.clearInterval(rotationTimer);
+                        rotationTimer = null;
+                    }
+                };
+
+                tabs.on('click', function (event) {
+                    event.preventDefault();
+
+                    const nextIndex = parseInt($(this).data('index'), 10);
+
+                    if (!Number.isNaN(nextIndex)) {
+                        setActive(nextIndex, true);
+                        stopAuto();
+                        startAuto();
+                    }
+                });
+
+                tabs.on('keydown', function (event) {
+                    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        setActive(activeIndex + 1, true);
+                        stopAuto();
+                        startAuto();
+                    }
+
+                    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        setActive(activeIndex - 1, true);
+                        stopAuto();
+                        startAuto();
+                    }
+                });
+
+                container.on('mouseenter focusin', stopAuto);
+                container.on('mouseleave focusout', startAuto);
+
+                setActive(activeIndex, false);
+                startAuto();
+            });
+        }
+
         const interactiveCards = $('article');
         interactiveCards.on('mousedown keydown', function () {
             $(this).addClass('is-pressed');

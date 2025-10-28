@@ -99,6 +99,170 @@ function haber_sitesi_widgets_init() {
 }
 add_action( 'widgets_init', 'haber_sitesi_widgets_init' );
 
+/**
+ * Tarama sonucunu geçici olarak saklayan anahtar.
+ */
+if ( ! defined( 'HABER_SITESI_CONFLICT_TRANSIENT' ) ) {
+    define( 'HABER_SITESI_CONFLICT_TRANSIENT', 'haber_sitesi_conflict_scan' );
+}
+
+/**
+ * Tema dosyalarında birleştirme işaretleri olup olmadığını döndürür.
+ *
+ * @return array<int, string>
+ */
+function haber_sitesi_get_conflict_marker_files() {
+    static $cached = null;
+
+    if ( null !== $cached ) {
+        return $cached;
+    }
+
+    $cached = get_transient( HABER_SITESI_CONFLICT_TRANSIENT );
+
+    if ( false !== $cached && is_array( $cached ) ) {
+        return $cached;
+    }
+
+    $marker_start = str_repeat( '<', 7 ) . ' ';
+    $marker_end   = str_repeat( '>', 7 ) . ' ';
+    $middle_line  = str_repeat( '=', 7 );
+    $patterns     = [ $marker_start, $marker_end, $middle_line ];
+    $directory = get_template_directory();
+    $files     = [];
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator( $directory, RecursiveDirectoryIterator::SKIP_DOTS )
+    );
+
+    /** @var SplFileInfo $file */
+    foreach ( $iterator as $file ) {
+        if ( ! $file->isFile() ) {
+            continue;
+        }
+
+        $extension = strtolower( $file->getExtension() );
+
+        if ( ! in_array( $extension, [ 'php', 'css', 'js', 'html', 'md' ], true ) ) {
+            continue;
+        }
+
+        $contents = @file_get_contents( $file->getPathname() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+
+        if ( false === $contents ) {
+            continue;
+        }
+
+        foreach ( $patterns as $pattern ) {
+            if ( false !== strpos( $contents, $pattern ) ) {
+                $relative = str_replace( $directory . '/', '', $file->getPathname() );
+                $files[]  = $relative;
+                break;
+            }
+        }
+    }
+
+    $files = array_values( array_unique( $files ) );
+
+    set_transient( HABER_SITESI_CONFLICT_TRANSIENT, $files, HOUR_IN_SECONDS );
+
+    $cached = $files;
+
+    return $files;
+}
+
+/**
+ * Yönetim panelinde yeniden tarama isteğini işler.
+ */
+function haber_sitesi_maybe_rescan_conflicts() {
+    if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    if ( empty( $_GET['haber_conflict_rescan'] ) ) {
+        return;
+    }
+
+    if ( ! wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ?? '' ), 'haber_conflict_rescan' ) ) {
+        return;
+    }
+
+    delete_transient( HABER_SITESI_CONFLICT_TRANSIENT );
+
+    $files = haber_sitesi_get_conflict_marker_files();
+
+    set_transient( 'haber_sitesi_conflict_rescan_message', empty( $files ) ? 'clean' : 'remaining', MINUTE_IN_SECONDS );
+
+    wp_safe_redirect( remove_query_arg( [ 'haber_conflict_rescan', '_wpnonce' ] ) );
+    exit;
+}
+add_action( 'admin_init', 'haber_sitesi_maybe_rescan_conflicts' );
+
+/**
+ * Yeniden tarama sonrasında bilgi mesajını gösterir.
+ */
+function haber_sitesi_conflict_rescan_feedback() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    $status = get_transient( 'haber_sitesi_conflict_rescan_message' );
+
+    if ( false === $status ) {
+        return;
+    }
+
+    delete_transient( 'haber_sitesi_conflict_rescan_message' );
+
+    if ( 'clean' === $status ) {
+        $class   = 'notice notice-success';
+        $message = __( 'Çakışma taraması yenilendi, işaret bulunamadı.', 'haber-sitesi' );
+    } else {
+        $class   = 'notice notice-warning';
+        $message = __( 'Çakışma taraması yenilendi, bazı dosyalar hâlâ işaret içeriyor.', 'haber-sitesi' );
+    }
+
+    echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( $message ) . '</p></div>';
+}
+add_action( 'admin_notices', 'haber_sitesi_conflict_rescan_feedback', 4 );
+
+/**
+ * Çakışma işaretleri bulunduğunda yönetim panelinde uyarı gösterir.
+ */
+function haber_sitesi_conflict_marker_notice() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    $files = haber_sitesi_get_conflict_marker_files();
+
+    if ( empty( $files ) ) {
+        return;
+    }
+
+    $rescan_url = wp_nonce_url(
+        add_query_arg(
+            [
+                'page'                  => 'haber-sitesi-staff',
+                'haber_conflict_rescan' => '1',
+            ],
+            admin_url( 'admin.php' )
+        ),
+        'haber_conflict_rescan'
+    );
+
+    echo '<div class="notice notice-error haber-conflict-notice">';
+    echo '<p>' . esc_html__( 'Temada çözülmemiş birleştirme işaretleri bulundu. Lütfen aşağıdaki dosyaları temizleyin:', 'haber-sitesi' ) . '</p>';
+    echo '<ul class="haber-conflict-notice__list">';
+    foreach ( $files as $file ) {
+        echo '<li>' . esc_html( $file ) . '</li>';
+    }
+    echo '</ul>';
+    echo '<p><a class="button button-secondary" href="' . esc_url( $rescan_url ) . '">' . esc_html__( 'Tarama sonucunu yenile', 'haber-sitesi' ) . '</a></p>';
+    echo '</div>';
+}
+add_action( 'admin_notices', 'haber_sitesi_conflict_marker_notice' );
+
 require get_template_directory() . '/inc/customizer.php';
 
 if ( is_admin() ) {
@@ -134,7 +298,7 @@ if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
      */
     function haber_sitesi_mobile_menu_fallback() {
         $home_url            = home_url( '/' );
-        $home_anchor         = trailingslashit( home_url() );
+        $home_anchor         = $home_url;
         $breaking_category   = absint( get_theme_mod( 'haber_breaking_news_category', 0 ) );
         $breaking_category   = $breaking_category > 0 ? $breaking_category : 0;
         $breaking_target     = $home_anchor . '#mobile-breaking-news';
@@ -148,7 +312,7 @@ if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
         }
         $categories_target   = $home_anchor . '#mobile-categories';
         $most_read_target    = $home_anchor . '#mobile-most-read';
-        $profile_target      = wp_login_url();
+        $profile_target      = wp_login_url( $home_url );
 
         echo '<ul class="mobile-bottom-nav__list">';
         echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $home_url ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🏠</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</span></a></li>';

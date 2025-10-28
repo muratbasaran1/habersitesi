@@ -10,7 +10,7 @@ get_header();
 <div class="mobile-shell mobile-archive">
     <?php if ( have_posts() ) : ?>
         <header class="mobile-archive__header">
-            <h1 class="mobile-archive__title"><?php printf( esc_html__( '"%s" için arama sonuçları', 'haber-sitesi' ), get_search_query() ); ?></h1>
+            <h1 class="mobile-archive__title"><?php printf( esc_html__( '"%s" için arama sonuçları', 'haber-sitesi' ), esc_html( get_search_query() ) ); ?></h1>
         </header>
         <div class="mobile-archive__list">
             <?php
