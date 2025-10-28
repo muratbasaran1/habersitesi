@@ -11,16 +11,22 @@ get_header();
 
 $lead_query = new WP_Query(
     [
+        'post_type'           => 'post',
         'posts_per_page'      => 1,
         'ignore_sticky_posts' => false,
+        'post_status'         => 'publish',
+        'no_found_rows'       => true,
     ]
 );
 
 $top_query = new WP_Query(
     [
+        'post_type'           => 'post',
         'posts_per_page'      => 4,
         'offset'              => 1,
         'ignore_sticky_posts' => 1,
+        'post_status'         => 'publish',
+        'no_found_rows'       => true,
     ]
 );
 

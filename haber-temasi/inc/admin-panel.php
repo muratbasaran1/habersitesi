@@ -347,6 +347,36 @@ function haber_sitesi_render_admin_page() {
             </div>
         <?php endif; ?>
 
+        <?php
+        $conflict_files = function_exists( 'haber_sitesi_get_conflict_marker_files' ) ? haber_sitesi_get_conflict_marker_files() : [];
+        $conflict_rescan_url = wp_nonce_url(
+            add_query_arg(
+                [
+                    'page'                  => 'haber-sitesi-staff',
+                    'haber_conflict_rescan' => '1',
+                ],
+                admin_url( 'admin.php' )
+            ),
+            'haber_conflict_rescan'
+        );
+        ?>
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--conflicts" aria-live="polite">
+            <h2><?php esc_html_e( 'Birleştirme Kontrolü', 'haber-sitesi' ); ?></h2>
+            <?php if ( empty( $conflict_files ) ) : ?>
+                <p class="haber-sitesi-admin__intro"><?php esc_html_e( 'Tema dosyalarında birleştirme işareti bulunamadı. Gerekirse taramayı yenileyebilirsiniz.', 'haber-sitesi' ); ?></p>
+            <?php else : ?>
+                <p class="haber-sitesi-admin__intro"><?php esc_html_e( 'Aşağıdaki dosyalarda hâlâ çözülmemiş birleştirme işaretleri var. Lütfen düzenleyip temizleyin.', 'haber-sitesi' ); ?></p>
+                <ul class="haber-sitesi-admin__conflict-list">
+                    <?php foreach ( $conflict_files as $file_path ) : ?>
+                        <li><?php echo esc_html( $file_path ); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+            <div class="haber-sitesi-admin__conflict-actions">
+                <a class="button button-secondary" href="<?php echo esc_url( $conflict_rescan_url ); ?>"><?php esc_html_e( 'Taramayı Yenile', 'haber-sitesi' ); ?></a>
+            </div>
+        </div>
+
         <div class="haber-sitesi-admin__card haber-sitesi-admin__card--summary">
             <h2><?php echo esc_html__( 'Ekip Özeti', 'haber-sitesi' ); ?></h2>
             <ul class="haber-sitesi-admin__metrics">
