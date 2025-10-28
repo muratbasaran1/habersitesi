@@ -86,13 +86,26 @@
 
         const bottomNavLinks = $('.mobile-bottom-nav__link');
         if (bottomNavLinks.length) {
-            const currentUrl = window.location.href.replace(/#.+$/, '');
+            const currentUrl = new URL(window.location.href);
+            const normalizePath = (url) => url.pathname.replace(/\/$/, '');
+
             bottomNavLinks.each(function () {
-                const linkUrl = this.href.replace(/#.+$/, '');
-                if (currentUrl === linkUrl) {
-                    $(this).addClass('is-active');
+                try {
+                    const linkUrl = new URL(this.href);
+                    const samePath = normalizePath(linkUrl) === normalizePath(currentUrl);
+                    const hashMatches = linkUrl.hash ? linkUrl.hash === currentUrl.hash : currentUrl.hash === '';
+
+                    if (samePath && hashMatches) {
+                        $(this).addClass('is-active');
+                    }
+                } catch (error) {
+                    // URL parse edilemezse bağlantı aktif bırakılmaz.
                 }
             });
+
+            if (!bottomNavLinks.filter('.is-active').length) {
+                bottomNavLinks.first().addClass('is-active');
+            }
 
             bottomNavLinks.on('click', function () {
                 bottomNavLinks.removeClass('is-active');

@@ -124,7 +124,7 @@ $weather_condition   = get_theme_mod( 'haber_weather_condition', __( 'Güneşli'
         </section>
     <?php endif; ?>
 
-    <section class="mobile-most-read" aria-label="<?php esc_attr_e( 'En çok okunan haberler', 'haber-sitesi' ); ?>">
+    <section id="mobile-most-read" class="mobile-most-read" aria-label="<?php esc_attr_e( 'En çok okunan haberler', 'haber-sitesi' ); ?>">
         <div class="mobile-most-read__card">
             <h2 class="mobile-most-read__title"><?php esc_html_e( 'En Çok Okunanlar', 'haber-sitesi' ); ?></h2>
             <?php if ( $popular_query->have_posts() ) : ?>

@@ -55,7 +55,7 @@
         <input id="mobile-search-field" type="search" name="s" placeholder="<?php echo esc_attr__( 'Haberlerde ara...', 'haber-sitesi' ); ?>" value="<?php echo esc_attr( get_search_query() ); ?>" />
         <button type="submit"><?php esc_html_e( 'Ara', 'haber-sitesi' ); ?></button>
     </form>
-    <nav class="mobile-category-nav" aria-label="<?php esc_attr_e( 'Hızlı kategoriler', 'haber-sitesi' ); ?>">
+    <nav id="mobile-categories" class="mobile-category-nav" aria-label="<?php esc_attr_e( 'Hızlı kategoriler', 'haber-sitesi' ); ?>">
         <div class="mobile-shell mobile-category-nav__scroll">
             <?php
             wp_nav_menu(
@@ -88,7 +88,7 @@
 
         if ( $breaking_query->have_posts() ) :
             ?>
-            <div class="mobile-breaking-news" aria-label="<?php esc_attr_e( 'Son dakika haberleri', 'haber-sitesi' ); ?>">
+            <div id="mobile-breaking-news" class="mobile-breaking-news" aria-label="<?php esc_attr_e( 'Son dakika haberleri', 'haber-sitesi' ); ?>">
                 <div class="mobile-shell mobile-breaking-news__inner">
                     <span class="mobile-breaking-news__label"><?php esc_html_e( 'Son Dakika', 'haber-sitesi' ); ?></span>
                     <div class="mobile-breaking-news__ticker" role="list">

@@ -122,16 +122,29 @@ if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
      * Mobil alt menü için varsayılan bağlantılar.
      */
     function haber_sitesi_mobile_menu_fallback() {
-        $posts_page = (int) get_option( 'page_for_posts' );
-        $home_url   = home_url( '/' );
-        $posts_url  = $posts_page ? get_permalink( $posts_page ) : get_post_type_archive_link( 'post' );
-        $posts_url  = $posts_url ? $posts_url : $home_url;
+        $home_url            = home_url( '/' );
+        $home_anchor         = trailingslashit( home_url() );
+        $breaking_category   = absint( get_theme_mod( 'haber_breaking_news_category', 0 ) );
+        $breaking_category   = $breaking_category > 0 ? $breaking_category : 0;
+        $breaking_target     = $home_anchor . '#mobile-breaking-news';
+
+        if ( $breaking_category ) {
+            $maybe_link = get_category_link( $breaking_category );
+
+            if ( ! is_wp_error( $maybe_link ) ) {
+                $breaking_target = $maybe_link;
+            }
+        }
+        $categories_target   = $home_anchor . '#mobile-categories';
+        $most_read_target    = $home_anchor . '#mobile-most-read';
+        $profile_target      = wp_login_url();
 
         echo '<ul class="mobile-bottom-nav__list">';
         echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $home_url ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🏠</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</span></a></li>';
-        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $posts_url ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">📰</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Haberler', 'haber-sitesi' ) . '</span></a></li>';
-        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( get_search_link() ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🔍</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Ara', 'haber-sitesi' ) . '</span></a></li>';
-        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( wp_login_url() ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">👤</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Profil', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $breaking_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">⚡</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Son Dakika', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $categories_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🗂️</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Kategoriler', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $most_read_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">❤️</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Favoriler', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $profile_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">👤</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Profil', 'haber-sitesi' ) . '</span></a></li>';
         echo '</ul>';
     }
 }
