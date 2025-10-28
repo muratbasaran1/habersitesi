@@ -11,6 +11,10 @@ function haber_sitesi_sanitize_checkbox( $checked ) {
     return ( isset( $checked ) && ( true === $checked || '1' === $checked ) );
 }
 
+function haber_sitesi_sanitize_text( $value ) {
+    return sanitize_text_field( $value );
+}
+
 function haber_sitesi_sanitize_category( $input ) {
     return absint( $input );
 }
@@ -35,6 +39,48 @@ function haber_sitesi_customize_register( $wp_customize ) {
     $wp_customize->add_section( 'haber_sitesi_homepage', [
         'title'    => __( 'Anasayfa', 'haber-sitesi' ),
         'priority' => 25,
+    ] );
+
+    $wp_customize->add_section( 'haber_sitesi_header_meta', [
+        'title'       => __( 'Üst Bilgi', 'haber-sitesi' ),
+        'priority'    => 20,
+        'description' => __( 'Üst bilgi satırındaki hava durumu bilgilerini düzenleyin.', 'haber-sitesi' ),
+    ] );
+
+    $wp_customize->add_setting( 'haber_weather_location', [
+        'default'           => __( 'İstanbul', 'haber-sitesi' ),
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'postMessage',
+    ] );
+
+    $wp_customize->add_control( 'haber_weather_location', [
+        'label'   => __( 'Şehir', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_header_meta',
+        'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_weather_temperature', [
+        'default'           => '15°C',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'postMessage',
+    ] );
+
+    $wp_customize->add_control( 'haber_weather_temperature', [
+        'label'   => __( 'Sıcaklık', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_header_meta',
+        'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_weather_condition', [
+        'default'           => __( 'Güneşli', 'haber-sitesi' ),
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'postMessage',
+    ] );
+
+    $wp_customize->add_control( 'haber_weather_condition', [
+        'label'   => __( 'Hava Durumu', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_header_meta',
+        'type'    => 'text',
     ] );
 
     $wp_customize->add_setting( 'haber_show_breaking_news', [
@@ -68,7 +114,7 @@ function haber_sitesi_customize_register( $wp_customize ) {
     ] );
 
     $wp_customize->add_setting( 'haber_primary_color', [
-        'default'           => '#0c6cf2',
+        'default'           => '#c70000',
         'sanitize_callback' => 'sanitize_hex_color',
         'transport'         => 'refresh',
     ] );
@@ -79,7 +125,7 @@ function haber_sitesi_customize_register( $wp_customize ) {
     ] ) );
 
     $wp_customize->add_setting( 'haber_dark_color', [
-        'default'           => '#0c1733',
+        'default'           => '#121212',
         'sanitize_callback' => 'sanitize_hex_color',
         'transport'         => 'refresh',
     ] );
@@ -92,38 +138,49 @@ function haber_sitesi_customize_register( $wp_customize ) {
 add_action( 'customize_register', 'haber_sitesi_customize_register' );
 
 function haber_sitesi_customizer_css() {
-    $primary = get_theme_mod( 'haber_primary_color', '#0c6cf2' );
-    $dark    = get_theme_mod( 'haber_dark_color', '#0c1733' );
+    $primary = get_theme_mod( 'haber_primary_color', '#c70000' );
+    $dark    = get_theme_mod( 'haber_dark_color', '#121212' );
     ?>
     <style type="text/css">
+        :root {
+            --haber-primary: <?php echo esc_html( $primary ); ?>;
+            --haber-dark: <?php echo esc_html( $dark ); ?>;
+        }
+
+        .mobile-breaking-news__label,
+        .pagination .current,
+        .button,
+        .mobile-hero__actions .button,
+        .mobile-load-more__button {
+            background-color: var(--haber-primary);
+        }
+
+        .mobile-hero,
+        .mobile-secondary__item,
+        .related-post,
+        .single-article {
+            border-top-color: var(--haber-primary);
+        }
+
+        .mobile-most-read__title {
+            border-top-color: var(--haber-dark);
+        }
+
         a,
-        .card .card-meta a,
-        .section-title a {
-            color: <?php echo esc_html( $primary ); ?>;
+        .mobile-category-nav__link,
+        .mobile-secondary__title a,
+        .mobile-most-read__link,
+        .tags a {
+            color: var(--haber-primary);
         }
 
-        .hero__featured,
-        .widget-area {
-            background-color: <?php echo esc_html( $dark ); ?>;
+        .pagination .current,
+        .button {
+            color: #ffffff;
         }
 
-        .breaking-news,
-        .button,
-        .card .button,
-        .pagination .current {
-            background-color: <?php echo esc_html( $primary ); ?>;
-        }
-
-        .breaking-news__item,
-        .button,
-        .card .button,
-        .pagination .current {
-            color: #fff;
-        }
-
-        .pagination a,
-        .pagination span {
-            color: <?php echo esc_html( $dark ); ?>;
+        .site-footer {
+            background-color: var(--haber-dark);
         }
     </style>
     <?php

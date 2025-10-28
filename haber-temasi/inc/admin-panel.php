@@ -138,6 +138,50 @@ function haber_sitesi_handle_admin_actions() {
 
         wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'success', $redirect_url ) );
         exit;
+    } elseif ( isset( $_POST['haber_sitesi_action'] ) && 'add_category' === $_POST['haber_sitesi_action'] ) {
+        if ( ! current_user_can( 'manage_categories' ) ) {
+            return;
+        }
+
+        check_admin_referer( 'haber_sitesi_add_category' );
+
+        $redirect_url = add_query_arg( 'page', 'haber-sitesi-staff', admin_url( 'admin.php' ) );
+
+        $category_name   = sanitize_text_field( wp_unslash( $_POST['category_name'] ?? '' ) );
+        $category_slug   = sanitize_title( wp_unslash( $_POST['category_slug'] ?? '' ) );
+        $category_parent = isset( $_POST['category_parent'] ) ? absint( $_POST['category_parent'] ) : 0;
+
+        if ( empty( $category_name ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_missing_name', $redirect_url ) );
+            exit;
+        }
+
+        $args = [];
+
+        if ( ! empty( $category_slug ) ) {
+            $args['slug'] = $category_slug;
+        }
+
+        if ( $category_parent > 0 ) {
+            $args['parent'] = $category_parent;
+        }
+
+        $result = wp_insert_term( $category_name, 'category', $args );
+
+        if ( is_wp_error( $result ) ) {
+            $code = $result->get_error_code();
+            $code = $code ? sanitize_key( $code ) : 'category_error';
+
+            if ( ! in_array( $code, [ 'term_exists', 'invalid_term_name' ], true ) ) {
+                $code = 'category_error';
+            }
+
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', $code, $redirect_url ) );
+            exit;
+        }
+
+        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_created', $redirect_url ) );
+        exit;
     }
 }
 
@@ -156,6 +200,11 @@ function haber_sitesi_render_admin_page() {
         'user_exists'    => [ 'class' => 'error', 'message' => __( 'Kullanıcı adı veya e-posta zaten kayıtlı.', 'haber-sitesi' ) ],
         'missing_fields' => [ 'class' => 'error', 'message' => __( 'Lütfen tüm zorunlu alanları doldurun.', 'haber-sitesi' ) ],
         'error'          => [ 'class' => 'error', 'message' => __( 'Kullanıcı oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
+        'category_created'      => [ 'class' => 'updated', 'message' => __( 'Yeni kategori başarıyla oluşturuldu.', 'haber-sitesi' ) ],
+        'category_missing_name' => [ 'class' => 'error', 'message' => __( 'Kategori adı boş bırakılamaz.', 'haber-sitesi' ) ],
+        'term_exists'           => [ 'class' => 'error', 'message' => __( 'Bu isim veya slaş ile eşleşen bir kategori zaten var.', 'haber-sitesi' ) ],
+        'invalid_term_name'     => [ 'class' => 'error', 'message' => __( 'Kategori adı geçersiz karakterler içeriyor.', 'haber-sitesi' ) ],
+        'category_error'        => [ 'class' => 'error', 'message' => __( 'Kategori oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
     ];
 
     $staff_roles = [
@@ -213,11 +262,83 @@ function haber_sitesi_render_admin_page() {
     }
 
     wp_reset_postdata();
+
+    global $wpdb;
+
+    $total_views = (int) $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT SUM(CAST(pm.meta_value AS UNSIGNED)) FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE pm.meta_key = %s AND p.post_type = %s AND p.post_status NOT IN ('auto-draft','trash')",
+            'haber_view_count',
+            'post'
+        )
+    );
+
+    $top_view_posts = get_posts(
+        [
+            'post_type'        => 'post',
+            'post_status'      => 'publish',
+            'posts_per_page'   => 5,
+            'meta_key'         => 'haber_view_count',
+            'orderby'          => 'meta_value_num',
+            'meta_type'        => 'NUMERIC',
+            'order'            => 'DESC',
+            'suppress_filters' => false,
+            'meta_query'       => [
+                'relation' => 'OR',
+                [
+                    'key'     => 'haber_view_count',
+                    'compare' => 'EXISTS',
+                ],
+                [
+                    'key'     => 'haber_view_count',
+                    'compare' => 'NOT EXISTS',
+                ],
+            ],
+        ]
+    );
+    $top_categories = get_terms(
+        [
+            'taxonomy'   => 'category',
+            'hide_empty' => false,
+            'orderby'    => 'count',
+            'order'      => 'DESC',
+            'number'     => 6,
+        ]
+    );
+
+    $category_parent_select = '';
+    if ( current_user_can( 'manage_categories' ) ) {
+        $category_parent_select = wp_dropdown_categories(
+            [
+                'taxonomy'          => 'category',
+                'hide_empty'        => false,
+                'name'              => 'category_parent',
+                'id'                => 'haber-category-parent',
+                'orderby'           => 'name',
+                'hierarchical'      => true,
+                'show_option_none'  => __( 'Ana kategori yok', 'haber-sitesi' ),
+                'option_none_value' => 0,
+                'echo'              => false,
+            ]
+        );
+    }
+
+    $recent_posts = get_posts(
+        [
+            'post_type'      => 'post',
+            'post_status'    => [ 'publish', 'pending', 'draft', 'future' ],
+            'numberposts'    => 8,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'suppress_filters' => false,
+        ]
+    );
+
     ?>
     <div class="wrap haber-sitesi-admin">
         <h1><?php echo esc_html__( 'Haber Yönetim Paneli', 'haber-sitesi' ); ?></h1>
         <p class="description">
-            <?php echo esc_html__( 'Muhabir, yazar ve editör ekibini bu panel üzerinden yönetin.', 'haber-sitesi' ); ?>
+            <?php echo esc_html__( 'Muhabir, yazar ve editör ekibini ve haber içerik akışını bu panel üzerinden yönetin.', 'haber-sitesi' ); ?>
         </p>
 
         <?php if ( $notice_key && isset( $notices[ $notice_key ] ) ) : ?>
@@ -249,6 +370,10 @@ function haber_sitesi_render_admin_page() {
                     <span class="haber-sitesi-admin__metric-label"><?php esc_html_e( 'Zamanlanmış Yayın', 'haber-sitesi' ); ?></span>
                     <span class="haber-sitesi-admin__metric-value"><?php echo esc_html( number_format_i18n( $scheduled_posts ) ); ?></span>
                 </li>
+                <li>
+                    <span class="haber-sitesi-admin__metric-label"><?php esc_html_e( 'Toplam Görüntüleme', 'haber-sitesi' ); ?></span>
+                    <span class="haber-sitesi-admin__metric-value"><?php echo esc_html( haber_sitesi_format_count( $total_views ) ); ?></span>
+                </li>
             </ul>
             <div class="haber-sitesi-admin__metric-tags" role="list">
                 <?php foreach ( $staff_roles as $role_key => $label ) : ?>
@@ -264,6 +389,163 @@ function haber_sitesi_render_admin_page() {
                     </span>
                 <?php endforeach; ?>
             </div>
+        </div>
+
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--actions">
+            <h2><?php echo esc_html__( 'Site Yönetimi Kısayolları', 'haber-sitesi' ); ?></h2>
+            <p class="haber-sitesi-admin__intro"><?php echo esc_html__( 'Yayın akışını hızlandırmak için sık kullanılan içerik ve ayar ekranlarına tek tıkla ulaşın.', 'haber-sitesi' ); ?></p>
+            <div class="haber-sitesi-quick-actions">
+                <a class="button button-primary" href="<?php echo esc_url( admin_url( 'post-new.php' ) ); ?>"><?php esc_html_e( 'Yeni Haber Oluştur', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'edit.php' ) ); ?>"><?php esc_html_e( 'Tüm Haberler', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=category' ) ); ?>"><?php esc_html_e( 'Kategorileri Yönet', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=post_tag' ) ); ?>"><?php esc_html_e( 'Etiketleri Yönet', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>"><?php esc_html_e( 'Medya Kütüphanesi', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'nav-menus.php' ) ); ?>"><?php esc_html_e( 'Menü Ayarları', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>"><?php esc_html_e( 'Özelleştiriciyi Aç', 'haber-sitesi' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>"><?php esc_html_e( 'Genel Ayarlar', 'haber-sitesi' ); ?></a>
+            </div>
+        </div>
+
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--trending">
+            <h2><?php echo esc_html__( 'En Çok Okunan Haberler', 'haber-sitesi' ); ?></h2>
+            <p class="haber-sitesi-admin__intro"><?php echo esc_html__( 'Görüntülenme sayılarına göre öne çıkan manşetleri takip edin.', 'haber-sitesi' ); ?></p>
+            <?php if ( ! empty( $top_view_posts ) ) : ?>
+                <ol class="haber-sitesi-admin__trend-list">
+                    <?php foreach ( $top_view_posts as $index => $post ) : ?>
+                        <?php
+                        $views    = haber_sitesi_get_post_views( $post->ID );
+                        $comments = get_comments_number( $post->ID );
+                        ?>
+                        <li>
+                            <span class="haber-sitesi-admin__trend-index"><?php echo esc_html( $index + 1 ); ?></span>
+                            <div class="haber-sitesi-admin__trend-body">
+                                <a href="<?php echo esc_url( get_edit_post_link( $post ) ); ?>" class="haber-sitesi-admin__trend-title"><?php echo esc_html( get_the_title( $post ) ); ?></a>
+                                <span class="haber-sitesi-admin__trend-meta">
+                                    <?php
+                                    printf(
+                                        /* translators: 1: formatted view count, 2: comment count */
+                                        esc_html__( '%1$s görüntüleme • %2$s yorum', 'haber-sitesi' ),
+                                        esc_html( haber_sitesi_format_count( $views ) ),
+                                        esc_html( number_format_i18n( $comments ) )
+                                    );
+                                    ?>
+                                </span>
+                            </div>
+                            <a class="haber-sitesi-admin__trend-link" href="<?php echo esc_url( get_permalink( $post ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Haberi Aç', 'haber-sitesi' ); ?></a>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php else : ?>
+                <p class="haber-sitesi-admin__empty"><?php esc_html_e( 'Henüz görüntülenme verisi bulunmuyor.', 'haber-sitesi' ); ?></p>
+            <?php endif; ?>
+        </div>
+
+        <?php if ( current_user_can( 'manage_categories' ) ) : ?>
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--split">
+            <h2><?php echo esc_html__( 'Kategori Yönetimi', 'haber-sitesi' ); ?></h2>
+            <div class="haber-sitesi-grid haber-sitesi-grid--equal">
+                <div>
+                    <h3 class="haber-sitesi-admin__subheading"><?php echo esc_html__( 'Yeni Kategori Oluştur', 'haber-sitesi' ); ?></h3>
+                    <form method="post" class="haber-sitesi-form">
+                        <?php wp_nonce_field( 'haber_sitesi_add_category' ); ?>
+                        <input type="hidden" name="haber_sitesi_action" value="add_category" />
+                        <p>
+                            <label for="haber-category-name" class="haber-sitesi-label"><?php esc_html_e( 'Kategori Adı', 'haber-sitesi' ); ?></label>
+                            <input type="text" id="haber-category-name" name="category_name" class="regular-text" required />
+                        </p>
+                        <p>
+                            <label for="haber-category-slug" class="haber-sitesi-label"><?php esc_html_e( 'Kısa İsim (Slug)', 'haber-sitesi' ); ?></label>
+                            <input type="text" id="haber-category-slug" name="category_slug" class="regular-text" placeholder="<?php esc_attr_e( 'Opsiyonel', 'haber-sitesi' ); ?>" />
+                        </p>
+                        <p>
+                            <label for="haber-category-parent" class="haber-sitesi-label"><?php esc_html_e( 'Üst Kategori', 'haber-sitesi' ); ?></label>
+                            <select id="haber-category-parent" name="category_parent" class="regular-text">
+                                <?php
+                                if ( $category_parent_select ) {
+                                    echo wp_kses( $category_parent_select, [
+                                        'option' => [
+                                            'class'    => true,
+                                            'value'    => true,
+                                            'selected' => true,
+                                        ],
+                                    ] );
+                                } else {
+                                    printf( '<option value="0">%s</option>', esc_html__( 'Ana kategori yok', 'haber-sitesi' ) );
+                                }
+                                ?>
+                            </select>
+                        </p>
+                        <?php submit_button( __( 'Kategori Oluştur', 'haber-sitesi' ) ); ?>
+                    </form>
+                </div>
+                <div>
+                    <h3 class="haber-sitesi-admin__subheading"><?php echo esc_html__( 'En Çok Kullanılan Kategoriler', 'haber-sitesi' ); ?></h3>
+                    <?php if ( ! empty( $top_categories ) && ! is_wp_error( $top_categories ) ) : ?>
+                        <ul class="haber-sitesi-admin__category-list">
+                            <?php foreach ( $top_categories as $term ) : ?>
+                                <li>
+                                    <div>
+                                        <strong><?php echo esc_html( $term->name ); ?></strong>
+                                        <span><?php printf( /* translators: %s: post count */ esc_html__( '%s içerik', 'haber-sitesi' ), esc_html( number_format_i18n( $term->count ) ) ); ?></span>
+                                    </div>
+                                    <div class="haber-sitesi-admin__links">
+                                        <a href="<?php echo esc_url( get_edit_term_link( $term, 'category' ) ); ?>" class="haber-sitesi-admin__link"><?php esc_html_e( 'Düzenle', 'haber-sitesi' ); ?></a>
+                                        <a href="<?php echo esc_url( add_query_arg( [ 'category_name' => $term->slug ], admin_url( 'edit.php' ) ) ); ?>" class="haber-sitesi-admin__link"><?php esc_html_e( 'Haberleri Gör', 'haber-sitesi' ); ?></a>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else : ?>
+                        <p class="haber-sitesi-admin__empty"><?php esc_html_e( 'Henüz kategori bulunmuyor.', 'haber-sitesi' ); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--timeline">
+            <h2><?php echo esc_html__( 'Güncel Haber Akışı', 'haber-sitesi' ); ?></h2>
+            <p class="haber-sitesi-admin__intro"><?php echo esc_html__( 'Son eklenen içerikleri durum rozetleriyle birlikte takip edin.', 'haber-sitesi' ); ?></p>
+            <?php if ( ! empty( $recent_posts ) ) : ?>
+                <ul class="haber-sitesi-admin__recent-list">
+                    <?php
+                    foreach ( $recent_posts as $post ) {
+                        $status        = get_post_status( $post );
+                        $status_labels = [
+                            'publish' => [ 'label' => __( 'Yayında', 'haber-sitesi' ), 'class' => 'is-live' ],
+                            'pending' => [ 'label' => __( 'İncelemede', 'haber-sitesi' ), 'class' => 'is-review' ],
+                            'draft'   => [ 'label' => __( 'Taslak', 'haber-sitesi' ), 'class' => 'is-draft' ],
+                            'future'  => [ 'label' => __( 'Zamanlandı', 'haber-sitesi' ), 'class' => 'is-scheduled' ],
+                        ];
+
+                        $status_data = $status_labels[ $status ] ?? [ 'label' => __( 'Diğer', 'haber-sitesi' ), 'class' => 'is-other' ];
+                        ?>
+                        <li>
+                            <span class="haber-sitesi-status <?php echo esc_attr( $status_data['class'] ); ?>"><?php echo esc_html( $status_data['label'] ); ?></span>
+                            <a href="<?php echo esc_url( get_edit_post_link( $post ) ); ?>" class="haber-sitesi-admin__recent-title"><?php echo esc_html( get_the_title( $post ) ); ?></a>
+                            <span class="haber-sitesi-admin__recent-meta">
+                                <?php
+                                printf(
+                                    /* translators: 1: author name, 2: post date */
+                                    esc_html__( '%1$s • %2$s', 'haber-sitesi' ),
+                                    esc_html( get_the_author_meta( 'display_name', $post->post_author ) ),
+                                    esc_html( get_the_time( get_option( 'date_format' ), $post ) )
+                                );
+                                ?>
+                            </span>
+                        </li>
+                        <?php
+                    }
+                    ?>
+                </ul>
+                <div class="haber-sitesi-admin__recent-actions">
+                    <a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_status=pending' ) ); ?>"><?php esc_html_e( 'İnceleme Bekleyen Haberler', 'haber-sitesi' ); ?></a>
+                    <a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_status=draft' ) ); ?>"><?php esc_html_e( 'Taslaklar', 'haber-sitesi' ); ?></a>
+                    <a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_status=future' ) ); ?>"><?php esc_html_e( 'Zamanlanmış Yayınlar', 'haber-sitesi' ); ?></a>
+                </div>
+            <?php else : ?>
+                <p class="haber-sitesi-admin__empty"><?php esc_html_e( 'Henüz haber eklenmemiş.', 'haber-sitesi' ); ?></p>
+            <?php endif; ?>
         </div>
 
         <?php if ( current_user_can( 'create_users' ) ) : ?>

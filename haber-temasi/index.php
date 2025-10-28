@@ -7,12 +7,12 @@
 
 get_header();
 ?>
-<div class="container">
+<div class="mobile-shell mobile-archive">
     <?php if ( have_posts() ) : ?>
-        <header class="section-title">
-            <h1><?php single_post_title(); ?></h1>
+        <header class="mobile-archive__header">
+            <h1 class="mobile-archive__title"><?php single_post_title(); ?></h1>
         </header>
-        <div class="card-grid">
+        <div class="mobile-archive__list">
             <?php
             while ( have_posts() ) :
                 the_post();
@@ -20,11 +20,11 @@ get_header();
             endwhile;
             ?>
         </div>
-        <nav class="pagination">
+        <nav class="pagination" aria-label="<?php esc_attr_e( 'Sayfalandırma', 'haber-sitesi' ); ?>">
             <?php the_posts_pagination(); ?>
         </nav>
     <?php else : ?>
-        <h2><?php esc_html_e( 'İçerik bulunamadı.', 'haber-sitesi' ); ?></h2>
+        <p class="mobile-empty"><?php esc_html_e( 'İçerik bulunamadı.', 'haber-sitesi' ); ?></p>
     <?php endif; ?>
 </div>
 <?php get_footer(); ?>

@@ -1,18 +1,18 @@
 <?php
 /**
- * Arama sonuçları için şablon.
+ * Arama sonuçları şablonu.
  *
  * @package Haber_Sitesi
  */
 
 get_header();
 ?>
-<div class="container">
-    <header class="section-title">
-        <h1><?php printf( esc_html__( '"%s" için arama sonuçları', 'haber-sitesi' ), get_search_query() ); ?></h1>
-    </header>
+<div class="mobile-shell mobile-archive">
     <?php if ( have_posts() ) : ?>
-        <div class="card-grid">
+        <header class="mobile-archive__header">
+            <h1 class="mobile-archive__title"><?php printf( esc_html__( '"%s" için arama sonuçları', 'haber-sitesi' ), get_search_query() ); ?></h1>
+        </header>
+        <div class="mobile-archive__list">
             <?php
             while ( have_posts() ) :
                 the_post();
@@ -20,11 +20,11 @@ get_header();
             endwhile;
             ?>
         </div>
-        <nav class="pagination">
+        <nav class="pagination" aria-label="<?php esc_attr_e( 'Sayfalandırma', 'haber-sitesi' ); ?>">
             <?php the_posts_pagination(); ?>
         </nav>
     <?php else : ?>
-        <h2><?php esc_html_e( 'Eşleşen içerik bulunamadı.', 'haber-sitesi' ); ?></h2>
+        <p class="mobile-empty"><?php esc_html_e( 'Eşleşen sonuç bulunamadı.', 'haber-sitesi' ); ?></p>
     <?php endif; ?>
 </div>
 <?php get_footer(); ?>

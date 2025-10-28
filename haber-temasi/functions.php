@@ -43,6 +43,7 @@ if ( ! function_exists( 'haber_sitesi_setup' ) ) {
         register_nav_menus( [
             'primary'   => __( 'Ana Menü', 'haber-sitesi' ),
             'secondary' => __( 'Üst Bilgi Menüsü', 'haber-sitesi' ),
+            'mobile'    => __( 'Mobil Alt Menü', 'haber-sitesi' ),
         ] );
     }
 }
@@ -58,6 +59,17 @@ function haber_sitesi_enqueue_assets() {
     wp_enqueue_style( 'haber-sitesi-main', get_template_directory_uri() . '/assets/css/main.css', [], $version );
 
     wp_enqueue_script( 'haber-sitesi-navigation', get_template_directory_uri() . '/assets/js/main.js', [ 'jquery' ], $version, true );
+
+    wp_localize_script(
+        'haber-sitesi-navigation',
+        'haberSiteiInteract',
+        [
+            'shareCopied'       => __( 'Bağlantı panoya kopyalandı.', 'haber-sitesi' ),
+            'shareCopyFallback' => __( 'Bağlantı kopyalanamadı. Lütfen paylaşım bağlantısını manuel olarak açın.', 'haber-sitesi' ),
+            'saveLabel'         => __( 'Kaydet', 'haber-sitesi' ),
+            'savedLabel'        => __( 'Kaydedildi', 'haber-sitesi' ),
+        ]
+    );
 }
 add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_assets' );
 
@@ -93,6 +105,61 @@ if ( is_admin() ) {
     require get_template_directory() . '/inc/admin-panel.php';
 }
 
+if ( ! function_exists( 'haber_sitesi_primary_menu_fallback' ) ) {
+    /**
+     * Ana menü için kategori tabanlı yedek gezinme çıktısı.
+     */
+    function haber_sitesi_primary_menu_fallback() {
+        $categories = get_categories( [
+            'number'     => 8,
+            'hide_empty' => true,
+        ] );
+
+        if ( empty( $categories ) ) {
+            echo '<ul class="mobile-category-nav__list"><li class="mobile-category-nav__item"><a class="mobile-category-nav__link" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</a></li></ul>';
+            return;
+        }
+
+        echo '<ul class="mobile-category-nav__list">';
+        foreach ( $categories as $category ) {
+            echo '<li class="mobile-category-nav__item"><a class="mobile-category-nav__link" href="' . esc_url( get_category_link( $category->term_id ) ) . '">' . esc_html( $category->name ) . '</a></li>';
+        }
+        echo '</ul>';
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
+    /**
+     * Mobil alt menü için varsayılan bağlantılar.
+     */
+    function haber_sitesi_mobile_menu_fallback() {
+        $home_url            = home_url( '/' );
+        $home_anchor         = trailingslashit( home_url() );
+        $breaking_category   = absint( get_theme_mod( 'haber_breaking_news_category', 0 ) );
+        $breaking_category   = $breaking_category > 0 ? $breaking_category : 0;
+        $breaking_target     = $home_anchor . '#mobile-breaking-news';
+
+        if ( $breaking_category ) {
+            $maybe_link = get_category_link( $breaking_category );
+
+            if ( ! is_wp_error( $maybe_link ) ) {
+                $breaking_target = $maybe_link;
+            }
+        }
+        $categories_target   = $home_anchor . '#mobile-categories';
+        $most_read_target    = $home_anchor . '#mobile-most-read';
+        $profile_target      = wp_login_url();
+
+        echo '<ul class="mobile-bottom-nav__list">';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $home_url ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🏠</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $breaking_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">⚡</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Son Dakika', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $categories_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">🗂️</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Kategoriler', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $most_read_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">❤️</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Favoriler', 'haber-sitesi' ) . '</span></a></li>';
+        echo '<li class="mobile-bottom-nav__item"><a class="mobile-bottom-nav__link" href="' . esc_url( $profile_target ) . '"><span class="mobile-bottom-nav__icon" aria-hidden="true">👤</span><span class="mobile-bottom-nav__label">' . esc_html__( 'Profil', 'haber-sitesi' ) . '</span></a></li>';
+        echo '</ul>';
+    }
+}
+
 /**
  * Yazı için tahmini okuma süresini döndürür.
  *
@@ -121,6 +188,75 @@ function haber_sitesi_get_reading_time( $post_id = 0 ) {
         $minutes
     );
 }
+
+/**
+ * Büyük sayı metriklerini kısa biçimde biçimlendirir.
+ *
+ * @param int $number Gösterilecek sayı.
+ *
+ * @return string
+ */
+function haber_sitesi_format_count( $number ) {
+    $number = (int) $number;
+
+    if ( $number >= 1000000 ) {
+        $value      = $number / 1000000;
+        $precision  = $value >= 10 ? 0 : 1;
+        $formatted  = number_format_i18n( $value, $precision );
+
+        return sprintf( _x( '%sM', 'count in millions', 'haber-sitesi' ), $formatted );
+    }
+
+    if ( $number >= 1000 ) {
+        $value      = $number / 1000;
+        $precision  = $value >= 10 ? 0 : 1;
+        $formatted  = number_format_i18n( $value, $precision );
+
+        return sprintf( _x( '%sK', 'count in thousands', 'haber-sitesi' ), $formatted );
+    }
+
+    return number_format_i18n( max( 0, $number ) );
+}
+
+/**
+ * Yazıya ait görüntülenme sayısını döndürür.
+ *
+ * @param int $post_id Yazı kimliği.
+ *
+ * @return int
+ */
+function haber_sitesi_get_post_views( $post_id = 0 ) {
+    $post_id = $post_id ? (int) $post_id : get_the_ID();
+
+    if ( ! $post_id ) {
+        return 0;
+    }
+
+    $views = get_post_meta( $post_id, 'haber_view_count', true );
+
+    return max( 0, (int) $views );
+}
+
+/**
+ * Tekil haber görüntülendiğinde görüntülenme sayısını artırır.
+ */
+function haber_sitesi_track_post_views() {
+    if ( ! is_singular( 'post' ) || is_preview() ) {
+        return;
+    }
+
+    $post_id = get_queried_object_id();
+
+    if ( ! $post_id ) {
+        return;
+    }
+
+    $views = haber_sitesi_get_post_views( $post_id );
+    $views++;
+
+    update_post_meta( $post_id, 'haber_view_count', $views );
+}
+add_action( 'template_redirect', 'haber_sitesi_track_post_views' );
 
 /**
  * İlgili yazılar için WP_Query örneği döndürür.

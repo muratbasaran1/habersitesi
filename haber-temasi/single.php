@@ -7,7 +7,7 @@
 
 get_header();
 ?>
-<div class="container">
+<div class="mobile-shell mobile-single">
     <?php
     if ( have_posts() ) :
         while ( have_posts() ) :
