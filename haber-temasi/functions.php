@@ -367,6 +367,12 @@ function haber_sitesi_enqueue_assets() {
             'liveUpdated'       => __( 'Canlı yayın güncellendi: %s', 'haber-sitesi' ),
         ]
     );
+
+    wp_add_inline_script(
+        'haber-sitesi-navigation',
+        'window.haberSitePortal = window.haberSitePortal || window.haberSiteInteract;',
+        'before'
+    );
 }
 add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_assets' );
 
