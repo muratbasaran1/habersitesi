@@ -60,6 +60,9 @@ if ( $show_breaking_news ) {
                         <span class="mobile-top-meta__weather-condition"><?php echo esc_html( $weather_condition ); ?></span>
                     <?php endif; ?>
                 </div>
+                <?php if ( is_user_logged_in() && current_user_can( 'edit_others_posts' ) ) : ?>
+                    <a class="mobile-top-meta__manage" href="<?php echo esc_url( home_url( '/yonet/' ) ); ?>"><?php esc_html_e( 'Yönetim', 'haber-sitesi' ); ?></a>
+                <?php endif; ?>
             </div>
         </div>
         <div class="mobile-shell mobile-header__bar">
@@ -151,6 +154,9 @@ if ( $show_breaking_news ) {
                     );
                     ?>
                 </nav>
+                <?php if ( is_user_logged_in() && current_user_can( 'edit_others_posts' ) ) : ?>
+                    <a class="desktop-header__portal" href="<?php echo esc_url( home_url( '/yonet/' ) ); ?>"><?php esc_html_e( 'Yönetim Portalı', 'haber-sitesi' ); ?></a>
+                <?php endif; ?>
             </div>
             <div class="desktop-header__main">
                 <div class="desktop-header__branding">

@@ -47,6 +47,302 @@ if ( ! function_exists( 'haber_sitesi_setup' ) ) {
         ] );
     }
 }
+
+if ( ! function_exists( 'haber_sitesi_get_staff_role_label' ) ) {
+    /**
+     * Haber ekibi rollerini okunabilir metne dönüştürür.
+     *
+     * @param WP_User $user Kullanıcı nesnesi.
+     *
+     * @return string
+     */
+    function haber_sitesi_get_staff_role_label( $user ) {
+        if ( ! ( $user instanceof WP_User ) ) {
+            return __( 'Haber Ekibi', 'haber-sitesi' );
+        }
+
+        $role_map = apply_filters(
+            'haber_sitesi_staff_role_labels',
+            [
+                'administrator'  => __( 'Yönetici', 'haber-sitesi' ),
+                'editor'         => __( 'Editör', 'haber-sitesi' ),
+                'author'         => __( 'Yazar', 'haber-sitesi' ),
+                'contributor'    => __( 'Muhabir', 'haber-sitesi' ),
+                'haber_editoru'  => __( 'Editör', 'haber-sitesi' ),
+                'haber_yazari'   => __( 'Yazar', 'haber-sitesi' ),
+                'haber_muhabiri' => __( 'Muhabir', 'haber-sitesi' ),
+            ],
+            $user
+        );
+
+        foreach ( (array) $user->roles as $role ) {
+            if ( isset( $role_map[ $role ] ) ) {
+                return apply_filters( 'haber_sitesi_staff_role_label', $role_map[ $role ], $role, $user );
+            }
+
+            $role_object = get_role( $role );
+
+            if ( $role_object && isset( $role_object->name ) ) {
+                $translated = translate_user_role( $role_object->name );
+
+                if ( $translated ) {
+                    return apply_filters( 'haber_sitesi_staff_role_label', $translated, $role, $user );
+                }
+            }
+        }
+
+        $fallback = __( 'Haber Ekibi', 'haber-sitesi' );
+
+        if ( ! empty( $user->roles ) ) {
+            $primary_role = (string) reset( $user->roles );
+
+            if ( $primary_role ) {
+                $readable = ucwords( str_replace( [ '_', '-' ], ' ', $primary_role ) );
+
+                if ( $readable ) {
+                    return apply_filters( 'haber_sitesi_staff_role_label', $readable, $primary_role, $user );
+                }
+            }
+        }
+
+        return apply_filters( 'haber_sitesi_default_staff_role_label', $fallback, $user );
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_collect_author_profile' ) ) {
+    /**
+     * Ön yüzde gösterilecek yazar bilgilerini derler.
+     *
+     * @param WP_User|int $user Kullanıcı nesnesi ya da kimliği.
+     *
+     * @return array<string, mixed>
+     */
+    function haber_sitesi_collect_author_profile( $user ) {
+        if ( ! ( $user instanceof WP_User ) ) {
+            $user = get_user_by( 'id', (int) $user );
+        }
+
+        if ( ! $user instanceof WP_User ) {
+            return [];
+        }
+
+        $post_count = count_user_posts( $user->ID, 'post', true );
+
+        $latest_posts = get_posts(
+            [
+                'author'         => $user->ID,
+                'post_type'      => 'post',
+                'post_status'    => 'publish',
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+            ]
+        );
+
+        $latest    = [];
+        $latest_id = ! empty( $latest_posts ) ? (int) $latest_posts[0] : 0;
+
+        if ( $latest_id ) {
+            $latest_timestamp = get_post_time( 'U', true, $latest_id );
+            $latest_title     = get_the_title( $latest_id );
+
+            if ( $latest_timestamp ) {
+                $latest = [
+                    'title'     => $latest_title,
+                    'permalink' => get_permalink( $latest_id ),
+                    'time'      => sprintf(
+                        __( '%s önce', 'haber-sitesi' ),
+                        human_time_diff( $latest_timestamp, current_time( 'timestamp', true ) )
+                    ),
+                ];
+            } else {
+                $latest = [
+                    'title'     => $latest_title,
+                    'permalink' => get_permalink( $latest_id ),
+                    'time'      => get_the_date( '', $latest_id ),
+                ];
+            }
+        }
+
+        $display_name = $user->display_name ? $user->display_name : $user->user_login;
+        $bio           = get_user_meta( $user->ID, 'description', true );
+
+        return [
+            'id'         => $user->ID,
+            'name'       => $display_name,
+            'role'       => haber_sitesi_get_staff_role_label( $user ),
+            'bio'        => $bio ? wp_trim_words( wp_strip_all_tags( $bio ), 28, '…' ) : '',
+            'avatar'     => get_avatar_url( $user->ID, [ 'size' => 160 ] ),
+            'profile'    => get_author_posts_url( $user->ID ),
+            'post_count' => $post_count,
+            'latest'     => $latest,
+        ];
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_get_live_center_defaults' ) ) {
+    /**
+     * Canlı yayın sahnesi için varsayılanları döndürür.
+     *
+     * @return array<string, mixed>
+     */
+    function haber_sitesi_get_live_center_defaults() {
+        return [
+            'manual'         => false,
+            'title'          => '',
+            'description'    => '',
+            'category'       => '',
+            'presenter'      => '',
+            'time'           => '',
+            'cta_label'      => __( 'Yayını Aç', 'haber-sitesi' ),
+            'cta_url'        => '',
+            'views'          => 0,
+            'comments'       => 0,
+            'reading_time'   => '',
+            'schedule_title' => '',
+            'embed'          => '',
+        ];
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_filter_live_embed' ) ) {
+    /**
+     * Canlı yayın embed çıktısını temizler.
+     *
+     * @param string $embed Embed kodu.
+     *
+     * @return string
+     */
+    function haber_sitesi_filter_live_embed( $embed ) {
+        if ( empty( $embed ) ) {
+            return '';
+        }
+
+        $allowed = [
+            'iframe' => [
+                'src'             => [],
+                'title'           => [],
+                'width'           => [],
+                'height'          => [],
+                'frameborder'     => [],
+                'allow'           => [],
+                'allowfullscreen' => [],
+                'loading'         => [],
+                'referrerpolicy'  => [],
+            ],
+            'div'    => [
+                'class' => [],
+                'style' => [],
+                'id'    => [],
+            ],
+            'span'   => [
+                'class' => [],
+                'style' => [],
+            ],
+            'p'      => [
+                'class' => [],
+                'style' => [],
+            ],
+            'strong' => [],
+            'em'     => [],
+            'a'      => [
+                'href'   => [],
+                'target' => [],
+                'rel'    => [],
+                'class'  => [],
+                'style'  => [],
+            ],
+            'video'  => [
+                'src'        => [],
+                'controls'   => [],
+                'muted'      => [],
+                'autoplay'   => [],
+                'loop'       => [],
+                'playsinline'=> [],
+                'poster'     => [],
+                'width'      => [],
+                'height'     => [],
+            ],
+            'source' => [
+                'src'  => [],
+                'type' => [],
+            ],
+        ];
+
+        return wp_kses( $embed, $allowed );
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_get_live_center_settings' ) ) {
+    /**
+     * Canlı yayın sahnesi ayarlarını döndürür.
+     *
+     * @return array<string, mixed>
+     */
+    function haber_sitesi_get_live_center_settings() {
+        $defaults = haber_sitesi_get_live_center_defaults();
+
+        return [
+            'manual'         => (bool) get_theme_mod( 'haber_live_manual_mode', $defaults['manual'] ),
+            'title'          => get_theme_mod( 'haber_live_title', $defaults['title'] ),
+            'description'    => get_theme_mod( 'haber_live_description', $defaults['description'] ),
+            'category'       => get_theme_mod( 'haber_live_category', $defaults['category'] ),
+            'presenter'      => get_theme_mod( 'haber_live_presenter', $defaults['presenter'] ),
+            'time'           => get_theme_mod( 'haber_live_time', $defaults['time'] ),
+            'cta_label'      => get_theme_mod( 'haber_live_cta_label', $defaults['cta_label'] ) ?: $defaults['cta_label'],
+            'cta_url'        => get_theme_mod( 'haber_live_cta_url', $defaults['cta_url'] ),
+            'views'          => absint( get_theme_mod( 'haber_live_views', $defaults['views'] ) ),
+            'comments'       => absint( get_theme_mod( 'haber_live_comments', $defaults['comments'] ) ),
+            'reading_time'   => get_theme_mod( 'haber_live_reading_time', $defaults['reading_time'] ),
+            'schedule_title' => get_theme_mod( 'haber_live_schedule_title', $defaults['schedule_title'] ),
+            'embed'          => haber_sitesi_filter_live_embed( get_theme_mod( 'haber_live_embed', $defaults['embed'] ) ),
+        ];
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_update_live_center_settings' ) ) {
+    /**
+     * Canlı yayın sahnesi ayarlarını günceller.
+     *
+     * @param array<string, mixed> $settings Ayar değerleri.
+     */
+    function haber_sitesi_update_live_center_settings( array $settings ) {
+        $defaults = haber_sitesi_get_live_center_defaults();
+
+        $manual = ! empty( $settings['manual'] );
+        set_theme_mod( 'haber_live_manual_mode', $manual );
+
+        $text_fields = [
+            'haber_live_title'          => isset( $settings['title'] ) ? sanitize_text_field( $settings['title'] ) : $defaults['title'],
+            'haber_live_category'       => isset( $settings['category'] ) ? sanitize_text_field( $settings['category'] ) : $defaults['category'],
+            'haber_live_presenter'      => isset( $settings['presenter'] ) ? sanitize_text_field( $settings['presenter'] ) : $defaults['presenter'],
+            'haber_live_time'           => isset( $settings['time'] ) ? sanitize_text_field( $settings['time'] ) : $defaults['time'],
+            'haber_live_cta_label'      => isset( $settings['cta_label'] ) ? sanitize_text_field( $settings['cta_label'] ) : $defaults['cta_label'],
+            'haber_live_reading_time'   => isset( $settings['reading_time'] ) ? sanitize_text_field( $settings['reading_time'] ) : $defaults['reading_time'],
+            'haber_live_schedule_title' => isset( $settings['schedule_title'] ) ? sanitize_text_field( $settings['schedule_title'] ) : $defaults['schedule_title'],
+        ];
+
+        foreach ( $text_fields as $mod => $value ) {
+            set_theme_mod( $mod, $value );
+        }
+
+        $description = isset( $settings['description'] ) ? haber_sitesi_filter_conflict_markers( wp_kses_post( $settings['description'] ) ) : $defaults['description'];
+        set_theme_mod( 'haber_live_description', $description );
+
+        $cta_url = isset( $settings['cta_url'] ) ? esc_url_raw( $settings['cta_url'] ) : $defaults['cta_url'];
+        set_theme_mod( 'haber_live_cta_url', $cta_url );
+
+        $views    = isset( $settings['views'] ) ? absint( $settings['views'] ) : $defaults['views'];
+        $comments = isset( $settings['comments'] ) ? absint( $settings['comments'] ) : $defaults['comments'];
+
+        set_theme_mod( 'haber_live_views', $views );
+        set_theme_mod( 'haber_live_comments', $comments );
+
+        $embed = isset( $settings['embed'] ) ? haber_sitesi_filter_live_embed( $settings['embed'] ) : $defaults['embed'];
+        set_theme_mod( 'haber_live_embed', $embed );
+    }
+}
+
 add_action( 'after_setup_theme', 'haber_sitesi_setup' );
 
 /**
@@ -62,22 +358,44 @@ function haber_sitesi_enqueue_assets() {
 
     wp_localize_script(
         'haber-sitesi-navigation',
-        'haberSiteiInteract',
+        'haberSiteInteract',
         [
             'shareCopied'       => __( 'Bağlantı panoya kopyalandı.', 'haber-sitesi' ),
             'shareCopyFallback' => __( 'Bağlantı kopyalanamadı. Lütfen paylaşım bağlantısını manuel olarak açın.', 'haber-sitesi' ),
             'saveLabel'         => __( 'Kaydet', 'haber-sitesi' ),
             'savedLabel'        => __( 'Kaydedildi', 'haber-sitesi' ),
+            'liveUpdated'       => __( 'Canlı yayın güncellendi: %s', 'haber-sitesi' ),
         ]
+    );
+
+    wp_add_inline_script(
+        'haber-sitesi-navigation',
+        'window.haberSitePortal = window.haberSitePortal || window.haberSiteInteract;',
+        'before'
     );
 }
 add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_assets' );
 
 /**
+ * Yönetim portalının yüklenip yüklenmediğini tespit eder.
+ *
+ * @return bool
+ */
+function haber_sitesi_is_portal_request() {
+    if ( is_page_template( 'page-templates/portal-haber-yonetimi.php' ) ) {
+        return true;
+    }
+
+    $portal_flag = get_query_var( 'haber_portal', '' );
+
+    return ! empty( $portal_flag );
+}
+
+/**
  * Yönetim portalı için özel varlıkları yükler.
  */
 function haber_sitesi_enqueue_portal_assets() {
-    if ( ! is_page_template( 'page-templates/portal-haber-yonetimi.php' ) ) {
+    if ( ! haber_sitesi_is_portal_request() ) {
         return;
     }
 
@@ -269,6 +587,141 @@ if ( ! function_exists( 'haber_sitesi_get_category_overview' ) ) {
         return $items;
     }
 }
+
+if ( ! function_exists( 'haber_sitesi_customize_market_snapshot' ) ) {
+    /**
+     * Özelleştirici ayarlarını piyasa panosu verilerine uygular.
+     *
+     * @param array<int, array<string, mixed>> $snapshot Varsayılan piyasa verisi.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function haber_sitesi_customize_market_snapshot( $snapshot ) {
+        $snapshot      = is_array( $snapshot ) ? $snapshot : [];
+        $ordered_items = [];
+        $order         = [];
+
+        foreach ( $snapshot as $item ) {
+            if ( empty( $item['label'] ) ) {
+                continue;
+            }
+
+            $label = wp_strip_all_tags( $item['label'] );
+            $slug  = sanitize_title( $label );
+
+            if ( ! $slug ) {
+                $slug = 'market-' . md5( $label );
+            }
+
+            if ( ! in_array( $slug, $order, true ) ) {
+                $order[] = $slug;
+            }
+
+            $direction = isset( $item['direction'] ) ? sanitize_key( $item['direction'] ) : 'flat';
+
+            if ( ! in_array( $direction, [ 'up', 'down', 'flat' ], true ) ) {
+                $direction = 'flat';
+            }
+
+            $ordered_items[ $slug ] = [
+                'label'     => $label,
+                'value'     => isset( $item['value'] ) ? wp_strip_all_tags( $item['value'] ) : '',
+                'direction' => $direction,
+            ];
+        }
+
+        $market_items = [
+            'dolar'      => [
+                'label'     => __( 'Dolar', 'haber-sitesi' ),
+                'value_mod' => 'haber_market_dolar_value',
+                'dir_mod'   => 'haber_market_dolar_direction',
+            ],
+            'euro'       => [
+                'label'     => __( 'Euro', 'haber-sitesi' ),
+                'value_mod' => 'haber_market_euro_value',
+                'dir_mod'   => 'haber_market_euro_direction',
+            ],
+            'gram-altin' => [
+                'label'     => __( 'Gram Altın', 'haber-sitesi' ),
+                'value_mod' => 'haber_market_gram-altin_value',
+                'dir_mod'   => 'haber_market_gram-altin_direction',
+            ],
+            'bist-100'   => [
+                'label'     => __( 'BIST 100', 'haber-sitesi' ),
+                'value_mod' => 'haber_market_bist-100_value',
+                'dir_mod'   => 'haber_market_bist-100_direction',
+            ],
+        ];
+
+        foreach ( $market_items as $slug => $data ) {
+            $value     = trim( (string) get_theme_mod( $data['value_mod'], '' ) );
+            $direction = get_theme_mod( $data['dir_mod'], 'inherit' );
+            $existing  = isset( $ordered_items[ $slug ] ) ? $ordered_items[ $slug ] : null;
+
+            if ( '' === $value && ( 'inherit' === $direction || '' === $direction ) ) {
+                continue;
+            }
+
+            if ( '' === $value && $existing && ! empty( $existing['value'] ) ) {
+                $value = $existing['value'];
+            }
+
+            if ( '' === $value ) {
+                continue;
+            }
+
+            $direction = sanitize_key( $direction );
+
+            if ( 'inherit' === $direction ) {
+                $direction = $existing && ! empty( $existing['direction'] ) ? $existing['direction'] : 'flat';
+            }
+
+            if ( ! in_array( $direction, [ 'up', 'down', 'flat' ], true ) ) {
+                $direction = 'flat';
+            }
+
+            $ordered_items[ $slug ] = [
+                'label'     => $data['label'],
+                'value'     => $value,
+                'direction' => $direction,
+            ];
+
+            if ( ! in_array( $slug, $order, true ) ) {
+                $order[] = $slug;
+            }
+        }
+
+        $result = [];
+
+        foreach ( array_keys( $market_items ) as $slug ) {
+            if ( isset( $ordered_items[ $slug ] ) ) {
+                $result[] = $ordered_items[ $slug ];
+                unset( $ordered_items[ $slug ] );
+                $index = array_search( $slug, $order, true );
+
+                if ( false !== $index ) {
+                    unset( $order[ $index ] );
+                }
+            }
+        }
+
+        foreach ( $order as $slug ) {
+            if ( isset( $ordered_items[ $slug ] ) ) {
+                $result[] = $ordered_items[ $slug ];
+                unset( $ordered_items[ $slug ] );
+            }
+        }
+
+        if ( ! empty( $ordered_items ) ) {
+            foreach ( $ordered_items as $item ) {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
+    }
+}
+add_filter( 'haber_sitesi_market_snapshot', 'haber_sitesi_customize_market_snapshot', 5 );
 
 if ( ! function_exists( 'haber_sitesi_get_monthly_activity' ) ) {
     /**
@@ -948,3 +1401,64 @@ function haber_sitesi_get_related_posts( $post_id = 0, $limit = 3 ) {
 
     return new WP_Query( $args );
 }
+
+/**
+ * Portal için özel sorgu değişkenini kaydeder.
+ *
+ * @param array $vars Sorgu değişkenleri.
+ *
+ * @return array
+ */
+function haber_sitesi_register_portal_query_var( $vars ) {
+    $vars[] = 'haber_portal';
+
+    return $vars;
+}
+add_filter( 'query_vars', 'haber_sitesi_register_portal_query_var' );
+
+/**
+ * /yonet rotasını kaydeder.
+ */
+function haber_sitesi_register_portal_rewrite() {
+    add_rewrite_rule( '^yonet/?$', 'index.php?haber_portal=1', 'top' );
+}
+add_action( 'init', 'haber_sitesi_register_portal_rewrite' );
+
+/**
+ * Portal şablonunu yükler.
+ *
+ * @param string $template Geçerli şablon yolu.
+ *
+ * @return string
+ */
+function haber_sitesi_load_portal_template( $template ) {
+    if ( empty( get_query_var( 'haber_portal' ) ) ) {
+        return $template;
+    }
+
+    if ( ! is_user_logged_in() ) {
+        auth_redirect();
+    }
+
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_die( esc_html__( 'Bu alana erişim yetkiniz bulunmuyor.', 'haber-sitesi' ), '', [ 'response' => 403 ] );
+    }
+
+    $portal_template = get_template_directory() . '/page-templates/portal-haber-yonetimi.php';
+
+    if ( file_exists( $portal_template ) ) {
+        return $portal_template;
+    }
+
+    return $template;
+}
+add_filter( 'template_include', 'haber_sitesi_load_portal_template' );
+
+/**
+ * Tema etkinleştirildiğinde /yonet rotası için kalıcı bağlantıları yeniler.
+ */
+function haber_sitesi_flush_rewrite_on_activation() {
+    haber_sitesi_register_portal_rewrite();
+    flush_rewrite_rules();
+}
+add_action( 'after_switch_theme', 'haber_sitesi_flush_rewrite_on_activation' );

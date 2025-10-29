@@ -11,6 +11,12 @@ get_header();
 
 $excluded_ids = [];
 
+$live_settings       = haber_sitesi_get_live_center_settings();
+$manual_live_enabled = $live_settings['manual'] && '' !== trim( (string) $live_settings['title'] );
+$live_cta_label      = $live_settings['cta_label'] ? $live_settings['cta_label'] : __( 'Yayını Aç', 'haber-sitesi' );
+$live_embed_html     = $live_settings['embed'];
+$live_schedule_title = $live_settings['schedule_title'];
+
 $hero_query = new WP_Query(
     [
         'post_type'           => 'post',
@@ -36,6 +42,99 @@ if ( $hero_query->have_posts() ) {
     }
     wp_reset_postdata();
 }
+
+$live_primary = [];
+$live_lineup  = [];
+
+if ( $manual_live_enabled ) {
+    $manual_permalink = $live_settings['cta_url'] ? $live_settings['cta_url'] : '';
+    $manual_excerpt   = $live_settings['description'];
+
+    $live_primary = [
+        'title'         => trim( (string) $live_settings['title'] ),
+        'permalink'     => $manual_permalink,
+        'excerpt'       => $manual_excerpt,
+        'excerpt_plain' => wp_strip_all_tags( $manual_excerpt ),
+        'category'      => $live_settings['category'],
+        'clock_time'    => $live_settings['time'],
+        'time'          => $live_settings['time'],
+        'author'        => $live_settings['presenter'],
+        'views'         => absint( $live_settings['views'] ),
+        'comments'      => absint( $live_settings['comments'] ),
+        'reading_time'  => $live_settings['reading_time'],
+        'image'         => '',
+        'thumb'         => '',
+    ];
+} else {
+    $live_query_args = [
+        'post_type'           => 'post',
+        'posts_per_page'      => 4,
+        'ignore_sticky_posts' => 1,
+        'post_status'         => 'publish',
+        'no_found_rows'       => true,
+        'post__not_in'        => $excluded_ids,
+    ];
+
+    $live_term = get_category_by_slug( 'canli-yayin' );
+
+    if ( $live_term && ! is_wp_error( $live_term ) ) {
+        $live_query_args['cat'] = $live_term->term_id;
+    } else {
+        $live_query_args['tax_query'] = [
+            [
+                'taxonomy' => 'post_format',
+                'field'    => 'slug',
+                'terms'    => [ 'post-format-video', 'post-format-audio' ],
+            ],
+        ];
+    }
+
+    $live_query = new WP_Query( $live_query_args );
+
+    if ( $live_query->have_posts() ) {
+        while ( $live_query->have_posts() ) {
+            $live_query->the_post();
+            $post_id = get_the_ID();
+            $item    = haber_sitesi_collect_post_data( $post_id, 26 );
+
+            if ( ! empty( $item ) ) {
+                $item['clock_time']    = get_post_time( get_option( 'time_format' ), false, $post_id );
+                $item['timestamp']     = (int) get_post_time( 'U', true, $post_id );
+                $item['excerpt_plain'] = wp_trim_words( wp_strip_all_tags( get_the_excerpt( $post_id ) ), 28, '…' );
+
+                $live_lineup[]  = $item;
+                $excluded_ids[] = $post_id;
+            }
+        }
+        wp_reset_postdata();
+    }
+
+    if ( ! empty( $live_lineup ) ) {
+        $live_primary = array_shift( $live_lineup );
+    }
+
+    if ( ! empty( $live_lineup ) ) {
+        foreach ( $live_lineup as $index => $lineup_item ) {
+            if ( empty( $lineup_item['clock_time'] ) && ! empty( $lineup_item['time'] ) ) {
+                $live_lineup[ $index ]['clock_time'] = $lineup_item['time'];
+            }
+        }
+    }
+}
+
+if ( ! empty( $live_primary ) ) {
+    $live_primary['clock_time'] = isset( $live_primary['clock_time'] ) && $live_primary['clock_time'] ? $live_primary['clock_time'] : $live_primary['time'];
+
+    if ( empty( $live_primary['permalink'] ) ) {
+        $live_primary['permalink'] = '#';
+    }
+}
+
+$live_primary_views_value    = ! empty( $live_primary['views'] ) ? haber_sitesi_format_count( $live_primary['views'] ) : '';
+$live_primary_comments_value = ! empty( $live_primary['comments'] ) ? number_format_i18n( $live_primary['comments'] ) : '';
+$live_primary_reading_value  = ! empty( $live_primary['reading_time'] ) ? $live_primary['reading_time'] : '';
+
+$live_schedule_heading = $live_schedule_title ? $live_schedule_title : __( 'Stüdyo Programı', 'haber-sitesi' );
 
 $top_categories = get_terms(
     [
@@ -288,11 +387,60 @@ if ( $trending_query->have_posts() ) {
     wp_reset_postdata();
 }
 
+$author_roles = apply_filters(
+    'haber_sitesi_front_author_roles',
+    [ 'haber_editoru', 'editor', 'haber_yazari', 'author', 'haber_muhabiri', 'contributor' ]
+);
+
+$author_args = [
+    'orderby'             => 'post_count',
+    'order'               => 'DESC',
+    'number'              => 6,
+    'fields'              => 'ids',
+    'has_published_posts' => [ 'post' ],
+];
+
+if ( ! empty( $author_roles ) ) {
+    $author_args['role__in'] = array_map( 'sanitize_key', (array) $author_roles );
+} else {
+    $author_args['who'] = 'authors';
+}
+
+$author_ids = get_users( $author_args );
+
+if ( empty( $author_ids ) ) {
+    $author_ids = get_users(
+        [
+            'who'                 => 'authors',
+            'number'              => 6,
+            'orderby'             => 'post_count',
+            'order'               => 'DESC',
+            'fields'              => 'ids',
+            'has_published_posts' => [ 'post' ],
+        ]
+    );
+}
+
+$author_profiles = [];
+
+if ( ! empty( $author_ids ) ) {
+    foreach ( $author_ids as $author_id ) {
+        $profile = haber_sitesi_collect_author_profile( $author_id );
+
+        if ( ! empty( $profile ) ) {
+            $author_profiles[] = $profile;
+        }
+    }
+}
+
+$team_directory_link = apply_filters( 'haber_sitesi_team_page_link', '' );
+
 $archive_link = get_post_type_archive_link( 'post' );
 
 $weather_location    = get_theme_mod( 'haber_weather_location', __( 'İstanbul', 'haber-sitesi' ) );
 $weather_temperature = get_theme_mod( 'haber_weather_temperature', '15°C' );
 $weather_condition   = get_theme_mod( 'haber_weather_condition', __( 'Güneşli', 'haber-sitesi' ) );
+$market_update_label = trim( (string) get_theme_mod( 'haber_market_update_label', '' ) );
 
 $market_snapshot = apply_filters(
     'haber_sitesi_market_snapshot',
@@ -387,6 +535,9 @@ $direction_labels = [
                     <?php endif; ?>
                     <?php if ( $weather_condition ) : ?>
                         <span class="front-market__weather-condition"><?php echo esc_html( $weather_condition ); ?></span>
+                    <?php endif; ?>
+                    <?php if ( $market_update_label ) : ?>
+                        <span class="front-market__update"><?php echo esc_html( $market_update_label ); ?></span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -631,6 +782,84 @@ $direction_labels = [
         </section>
     <?php endif; ?>
 
+    <?php if ( ! empty( $live_primary ) ) : ?>
+        <section class="front-live" id="front-canli" aria-label="<?php esc_attr_e( 'Canlı yayın merkezi', 'haber-sitesi' ); ?>">
+            <div class="front-shell">
+                <div class="front-live__stage" data-live-center>
+                    <article class="front-live__primary">
+                        <div class="front-live__visual">
+                            <span class="front-live__badge" aria-hidden="true"><?php esc_html_e( 'CANLI', 'haber-sitesi' ); ?></span>
+                            <?php if ( $live_embed_html ) : ?>
+                                <div class="front-live__embed">
+                                    <?php echo $live_embed_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                </div>
+                            <?php endif; ?>
+                            <img
+                                class="front-live__image<?php echo empty( $live_primary['image'] ) || $live_embed_html ? ' is-hidden' : ''; ?>"
+                                data-live-target="visual"
+                                src="<?php echo ! empty( $live_primary['image'] ) ? esc_url( $live_primary['image'] ) : ''; ?>"
+                                alt=""
+                            />
+                            <div class="front-live__placeholder<?php echo ( empty( $live_primary['image'] ) && ! $live_embed_html ) ? '' : ' is-hidden'; ?>" data-live-target="placeholder" aria-hidden="true">📡</div>
+                        </div>
+                        <div class="front-live__body" aria-live="polite">
+                            <div class="front-live__meta">
+                                <span class="front-live__meta-item<?php echo empty( $live_primary['category'] ) ? ' is-hidden' : ''; ?>" data-live-target="category"><?php echo esc_html( $live_primary['category'] ); ?></span>
+                                <span class="front-live__meta-item<?php echo empty( $live_primary['clock_time'] ) ? ' is-hidden' : ''; ?>" data-live-target="clock"><?php echo esc_html( $live_primary['clock_time'] ); ?></span>
+                                <span class="front-live__meta-item<?php echo empty( $live_primary['author'] ) ? ' is-hidden' : ''; ?>" data-live-target="author"><?php echo esc_html( $live_primary['author'] ); ?></span>
+                            </div>
+                            <h2 class="front-live__title">
+                                <a data-live-target="headline" href="<?php echo esc_url( $live_primary['permalink'] ); ?>"><?php echo esc_html( $live_primary['title'] ); ?></a>
+                            </h2>
+                            <p class="front-live__excerpt" data-live-target="excerpt"><?php echo wp_kses_post( $live_primary['excerpt'] ); ?></p>
+                            <div class="front-live__stats">
+                                <span <?php echo $live_primary_views_value ? '' : 'class="is-hidden" '; ?>data-live-target="views">👁️ <?php echo esc_html( $live_primary_views_value ); ?></span>
+                                <span <?php echo $live_primary_comments_value ? '' : 'class="is-hidden" '; ?>data-live-target="comments">💬 <?php echo esc_html( $live_primary_comments_value ); ?></span>
+                                <span <?php echo $live_primary_reading_value ? '' : 'class="is-hidden" '; ?>data-live-target="reading">⏱️ <?php echo esc_html( $live_primary_reading_value ); ?></span>
+                            </div>
+                            <div class="front-live__actions">
+                                <a class="front-live__cta<?php echo empty( $live_primary['permalink'] ) || '#' === $live_primary['permalink'] ? ' is-hidden' : ''; ?>" data-live-target="cta" href="<?php echo esc_url( $live_primary['permalink'] ); ?>"><?php echo esc_html( $live_cta_label ); ?></a>
+                                <a class="front-live__more" href="<?php echo esc_url( $archive_link ? $archive_link : home_url( '/' ) ); ?>#front-stream"><?php esc_html_e( 'Canlı akışı izle', 'haber-sitesi' ); ?></a>
+                            </div>
+                        </div>
+                    </article>
+                    <?php if ( ! empty( $live_lineup ) ) : ?>
+                        <aside class="front-live__schedule" aria-label="<?php esc_attr_e( 'Sıradaki canlı yayınlar', 'haber-sitesi' ); ?>">
+                            <h3 class="front-live__schedule-title"><?php echo esc_html( $live_schedule_heading ); ?></h3>
+                            <ul class="front-live__schedule-list">
+                                <?php foreach ( $live_lineup as $index => $item ) : ?>
+                                    <li class="front-live__schedule-item">
+                                        <button
+                                            type="button"
+                                            class="front-live__schedule-button<?php echo 0 === $index ? ' is-active' : ''; ?>"
+                                            data-live-trigger
+                                            data-live-title="<?php echo esc_attr( $item['title'] ); ?>"
+                                            data-live-url="<?php echo esc_url( $item['permalink'] ); ?>"
+                                            data-live-excerpt="<?php echo esc_attr( $item['excerpt_plain'] ); ?>"
+                                            data-live-category="<?php echo esc_attr( $item['category'] ); ?>"
+                                            data-live-clock="<?php echo esc_attr( $item['clock_time'] ); ?>"
+                                            data-live-author="<?php echo esc_attr( $item['author'] ); ?>"
+                                            data-live-views="<?php echo esc_attr( haber_sitesi_format_count( $item['views'] ) ); ?>"
+                                            data-live-comments="<?php echo esc_attr( number_format_i18n( $item['comments'] ) ); ?>"
+                                            data-live-reading="<?php echo esc_attr( $item['reading_time'] ); ?>"
+                                            data-live-thumb="<?php echo esc_url( $item['image'] ? $item['image'] : $item['thumb'] ); ?>"
+                                            data-live-cta="<?php echo esc_attr( $live_cta_label ); ?>"
+                                            aria-pressed="<?php echo 0 === $index ? 'true' : 'false'; ?>"
+                                        >
+                                            <span class="front-live__schedule-time"><?php echo esc_html( $item['clock_time'] ); ?></span>
+                                            <span class="front-live__schedule-headline"><?php echo esc_html( $item['title'] ); ?></span>
+                                            <span class="front-live__schedule-meta"><?php echo esc_html( $item['category'] ); ?> · <?php echo esc_html( $item['author'] ); ?></span>
+                                        </button>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </aside>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <div class="front-shell front-layout">
         <div class="front-layout__main">
             <section class="front-block" aria-label="<?php esc_attr_e( 'Günün başlıkları', 'haber-sitesi' ); ?>">
@@ -723,6 +952,68 @@ $direction_labels = [
                     <p class="front-empty"><?php esc_html_e( 'Haber merkezi için içerik bekleniyor.', 'haber-sitesi' ); ?></p>
                 <?php endif; ?>
             </section>
+
+            <?php if ( ! empty( $author_profiles ) ) : ?>
+                <section class="front-authors" id="front-yazarlar" aria-label="<?php esc_attr_e( 'Yazarlar ve yorumcular', 'haber-sitesi' ); ?>">
+                    <div class="front-authors__header">
+                        <div>
+                            <h2 class="front-authors__title"><?php esc_html_e( 'Canlı Yayın Ekibi', 'haber-sitesi' ); ?></h2>
+                            <p class="front-authors__subtitle"><?php esc_html_e( 'Stüdyo yorumcuları ve sahadaki muhabirler', 'haber-sitesi' ); ?></p>
+                        </div>
+                        <?php if ( $team_directory_link ) : ?>
+                            <a class="front-authors__all" href="<?php echo esc_url( $team_directory_link ); ?>"><?php esc_html_e( 'Tüm ekip', 'haber-sitesi' ); ?></a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="front-authors__grid">
+                        <?php foreach ( $author_profiles as $profile ) :
+                            $name      = isset( $profile['name'] ) ? $profile['name'] : '';
+                            $safe_name = trim( wp_strip_all_tags( $name ) );
+                            $initials  = '';
+
+                            if ( $safe_name ) {
+                                $parts = preg_split( '/\s+/', $safe_name );
+                                if ( ! empty( $parts ) ) {
+                                    $first       = $parts[0];
+                                    $last        = count( $parts ) > 1 ? $parts[ count( $parts ) - 1 ] : '';
+                                    $first_char  = function_exists( 'mb_substr' ) ? mb_substr( $first, 0, 1 ) : substr( $first, 0, 1 );
+                                    $second_char = $last ? ( function_exists( 'mb_substr' ) ? mb_substr( $last, 0, 1 ) : substr( $last, 0, 1 ) ) : '';
+                                    $initials    = strtoupper( $first_char . $second_char );
+                                }
+                            }
+                            ?>
+                            <article class="front-authors__card">
+                                <div class="front-authors__avatar">
+                                    <?php if ( ! empty( $profile['avatar'] ) ) : ?>
+                                        <img src="<?php echo esc_url( $profile['avatar'] ); ?>" alt="" />
+                                    <?php elseif ( $initials ) : ?>
+                                        <span class="front-authors__initials" aria-hidden="true"><?php echo esc_html( $initials ); ?></span>
+                                    <?php else : ?>
+                                        <span class="front-authors__initials" aria-hidden="true">✍️</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="front-authors__body">
+                                    <h3 class="front-authors__name"><a href="<?php echo esc_url( $profile['profile'] ); ?>"><?php echo esc_html( $name ); ?></a></h3>
+                                    <?php if ( ! empty( $profile['role'] ) ) : ?>
+                                        <span class="front-authors__role"><?php echo esc_html( $profile['role'] ); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $profile['bio'] ) ) : ?>
+                                        <p class="front-authors__bio"><?php echo esc_html( $profile['bio'] ); ?></p>
+                                    <?php endif; ?>
+                                    <div class="front-authors__footer">
+                                        <span class="front-authors__count">📝 <?php echo esc_html( number_format_i18n( (int) $profile['post_count'] ) ); ?></span>
+                                        <?php if ( ! empty( $profile['latest'] ) ) : ?>
+                                            <a class="front-authors__latest" href="<?php echo esc_url( $profile['latest']['permalink'] ); ?>">
+                                                <span class="front-authors__latest-title"><?php echo esc_html( $profile['latest']['title'] ); ?></span>
+                                                <span class="front-authors__latest-time"><?php echo esc_html( $profile['latest']['time'] ); ?></span>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
 
             <section class="front-block front-block--voices" aria-label="<?php esc_attr_e( 'En çok tartışılanlar', 'haber-sitesi' ); ?>">
                 <div class="front-block__header">

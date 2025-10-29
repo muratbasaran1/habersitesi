@@ -6,7 +6,7 @@
         const searchToggle = $('.mobile-header__search-toggle');
         const searchForm = $('#mobile-search');
         const searchField = $('#mobile-search-field');
-        const i18n = window.haberSiteiInteract || {};
+        const i18n = window.haberSiteInteract || window.haberSitePortal || {};
 
         const getMessage = function (key, fallback) {
             if (Object.prototype.hasOwnProperty.call(i18n, key) && i18n[key]) {
@@ -445,6 +445,158 @@
 
             $(window).on('scroll.haberProgress resize.haberProgress', updateProgress);
             updateProgress();
+        }
+
+        const liveCenters = $('[data-live-center]');
+
+        if (liveCenters.length) {
+            const templateMessage = getMessage('liveUpdated', 'Canlı yayın güncellendi: %s');
+
+            const formatMessage = function (template, value) {
+                if (!template || template.indexOf('%s') === -1) {
+                    return value || '';
+                }
+
+                return template.replace('%s', value || '');
+            };
+
+            liveCenters.each(function () {
+                const center = $(this);
+                const triggers = center.find('[data-live-trigger]');
+
+                if (!triggers.length) {
+                    return;
+                }
+
+                const setTargetText = function (target, value, hideWhenEmpty) {
+                    const node = center.find('[data-live-target="' + target + '"]');
+
+                    if (!node.length) {
+                        return;
+                    }
+
+                    const output = value || '';
+                    node.text(output);
+
+                    if (hideWhenEmpty) {
+                        node.toggleClass('is-hidden', output === '');
+                    }
+                };
+
+                const setMetric = function (target, prefix, value) {
+                    const node = center.find('[data-live-target="' + target + '"]');
+
+                    if (!node.length) {
+                        return;
+                    }
+
+                    const output = value ? prefix + value : '';
+                    node.text(output);
+                    node.toggleClass('is-hidden', output === '');
+                };
+
+                const setLink = function (target, url, text) {
+                    const node = center.find('[data-live-target="' + target + '"]');
+
+                    if (!node.length) {
+                        return;
+                    }
+
+                    if (url && url !== '#') {
+                        node.attr('href', url);
+                        node.removeClass('is-hidden');
+                    } else {
+                        node.attr('href', '#');
+                        node.addClass('is-hidden');
+                    }
+
+                    if (typeof text !== 'undefined') {
+                        node.text(text || '');
+                    }
+                };
+
+                const setVisual = function (url) {
+                    const image = center.find('[data-live-target="visual"]');
+                    const placeholder = center.find('[data-live-target="placeholder"]');
+
+                    if (!image.length) {
+                        return;
+                    }
+
+                    if (url) {
+                        image.attr('src', url);
+                        image.removeClass('is-hidden');
+                        if (placeholder.length) {
+                            placeholder.addClass('is-hidden');
+                        }
+                    } else {
+                        image.attr('src', '');
+                        image.addClass('is-hidden');
+                        if (placeholder.length) {
+                            placeholder.removeClass('is-hidden');
+                        }
+                    }
+                };
+
+                const setActiveTrigger = function (trigger) {
+                    triggers.removeClass('is-active').attr('aria-pressed', 'false');
+                    trigger.addClass('is-active').attr('aria-pressed', 'true');
+                };
+
+                const updateStage = function (trigger, shouldAnnounce = true) {
+                    if (!trigger || !trigger.length) {
+                        return;
+                    }
+
+                    const title = trigger.data('liveTitle') || '';
+                    const url = trigger.data('liveUrl') || '';
+                    const excerpt = trigger.data('liveExcerpt') || '';
+                    const category = trigger.data('liveCategory') || '';
+                    const clock = trigger.data('liveClock') || '';
+                    const author = trigger.data('liveAuthor') || '';
+                    const views = trigger.data('liveViews') || '';
+                    const comments = trigger.data('liveComments') || '';
+                    const reading = trigger.data('liveReading') || '';
+                    const ctaText = trigger.data('liveCta');
+                    const thumb = trigger.data('liveThumb') || '';
+
+                    setLink('headline', url, title);
+                    setLink('cta', url, (typeof ctaText === 'string' && ctaText.length) ? ctaText : undefined);
+                    setTargetText('excerpt', excerpt, true);
+                    setTargetText('category', category, true);
+                    setTargetText('clock', clock, true);
+                    setTargetText('author', author, true);
+                    setMetric('views', '👁️ ', views);
+                    setMetric('comments', '💬 ', comments);
+                    setMetric('reading', '⏱️ ', reading);
+                    setVisual(thumb);
+
+                    setActiveTrigger(trigger);
+
+                    if (shouldAnnounce && title) {
+                        announce(formatMessage(templateMessage, title));
+                    }
+                };
+
+                triggers.on('click', function (event) {
+                    event.preventDefault();
+                    updateStage($(this));
+                });
+
+                triggers.on('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        updateStage($(this));
+                    }
+                });
+
+                const initialActive = triggers.filter('.is-active').first();
+                const starter = initialActive.length ? initialActive : triggers.first();
+
+                if (starter.length) {
+                    updateStage(starter, false);
+                }
+            });
         }
 
         const shareButtons = $('.js-share-button');

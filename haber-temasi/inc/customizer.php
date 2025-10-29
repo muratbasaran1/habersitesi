@@ -15,6 +15,81 @@ function haber_sitesi_sanitize_text( $value ) {
     return sanitize_text_field( $value );
 }
 
+function haber_sitesi_sanitize_url_setting( $value ) {
+    return esc_url_raw( $value );
+}
+
+function haber_sitesi_sanitize_rich_text( $value ) {
+    return wp_kses_post( $value );
+}
+
+function haber_sitesi_sanitize_embed( $value ) {
+    $allowed = [
+        'iframe' => [
+            'src'             => [],
+            'title'           => [],
+            'width'           => [],
+            'height'          => [],
+            'frameborder'     => [],
+            'allow'           => [],
+            'allowfullscreen' => [],
+            'loading'         => [],
+            'referrerpolicy'  => [],
+        ],
+        'div'    => [
+            'class' => [],
+            'style' => [],
+            'id'    => [],
+        ],
+        'span'   => [
+            'class' => [],
+            'style' => [],
+        ],
+        'p'      => [
+            'class' => [],
+            'style' => [],
+        ],
+        'strong' => [],
+        'em'     => [],
+        'a'      => [
+            'href'   => [],
+            'target' => [],
+            'rel'    => [],
+            'class'  => [],
+            'style'  => [],
+        ],
+        'video'  => [
+            'src'        => [],
+            'controls'   => [],
+            'muted'      => [],
+            'autoplay'   => [],
+            'loop'       => [],
+            'playsinline'=> [],
+            'poster'     => [],
+            'width'      => [],
+            'height'     => [],
+        ],
+        'source' => [
+            'src'  => [],
+            'type' => [],
+        ],
+    ];
+
+    return wp_kses( $value, $allowed );
+}
+
+function haber_sitesi_sanitize_market_direction( $value ) {
+    $value    = sanitize_key( $value );
+    $allowed  = [ 'inherit', 'up', 'down', 'flat' ];
+    $fallback = 'inherit';
+
+    if ( ! in_array( $value, $allowed, true ) ) {
+        return $fallback;
+    }
+
+    return $value;
+}
+
 function haber_sitesi_sanitize_category( $input ) {
     return absint( $input );
 }
@@ -45,6 +120,18 @@ function haber_sitesi_customize_register( $wp_customize ) {
         'title'       => __( 'Üst Bilgi', 'haber-sitesi' ),
         'priority'    => 20,
         'description' => __( 'Üst bilgi satırındaki hava durumu bilgilerini düzenleyin.', 'haber-sitesi' ),
+    ] );
+
+    $wp_customize->add_section( 'haber_sitesi_market', [
+        'title'       => __( 'Piyasa Panosu', 'haber-sitesi' ),
+        'priority'    => 22,
+        'description' => __( 'Anasayfadaki piyasa göstergelerini ve güncelleme bilgisini düzenleyin.', 'haber-sitesi' ),
+    ] );
+
+    $wp_customize->add_section( 'haber_sitesi_live', [
+        'title'       => __( 'Canlı Yayın Merkezi', 'haber-sitesi' ),
+        'priority'    => 23,
+        'description' => __( 'Anasayfadaki canlı yayın sahnesinin içerik ve görsellerini yönetin.', 'haber-sitesi' ),
     ] );
 
     $wp_customize->add_setting( 'haber_weather_location', [
@@ -81,6 +168,229 @@ function haber_sitesi_customize_register( $wp_customize ) {
         'label'   => __( 'Hava Durumu', 'haber-sitesi' ),
         'section' => 'haber_sitesi_header_meta',
         'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_market_update_label', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_market_update_label', [
+        'label'       => __( 'Piyasa güncelleme etiketi', 'haber-sitesi' ),
+        'description' => __( 'Örn: "Güncelleme: 12.45"', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_market',
+        'type'        => 'text',
+    ] );
+
+    $market_items = [
+        'dolar'      => __( 'Dolar', 'haber-sitesi' ),
+        'euro'       => __( 'Euro', 'haber-sitesi' ),
+        'gram-altin' => __( 'Gram Altın', 'haber-sitesi' ),
+        'bist-100'   => __( 'BIST 100', 'haber-sitesi' ),
+    ];
+
+    foreach ( $market_items as $slug => $label ) {
+        $wp_customize->add_setting( "haber_market_{$slug}_value", [
+            'default'           => '',
+            'sanitize_callback' => 'haber_sitesi_sanitize_text',
+            'transport'         => 'refresh',
+        ] );
+
+        $wp_customize->add_control( "haber_market_{$slug}_value", [
+            'label'   => sprintf( __( '%s değeri', 'haber-sitesi' ), $label ),
+            'section' => 'haber_sitesi_market',
+            'type'    => 'text',
+        ] );
+
+        $wp_customize->add_setting( "haber_market_{$slug}_direction", [
+            'default'           => 'inherit',
+            'sanitize_callback' => 'haber_sitesi_sanitize_market_direction',
+            'transport'         => 'refresh',
+        ] );
+
+        $wp_customize->add_control( "haber_market_{$slug}_direction", [
+            'label'   => sprintf( __( '%s yönü', 'haber-sitesi' ), $label ),
+            'section' => 'haber_sitesi_market',
+            'type'    => 'select',
+            'choices' => [
+                'inherit' => __( 'Varsayılanı kullan', 'haber-sitesi' ),
+                'up'      => __( 'Yükseliş', 'haber-sitesi' ),
+                'down'    => __( 'Düşüş', 'haber-sitesi' ),
+                'flat'    => __( 'Sabit', 'haber-sitesi' ),
+            ],
+        ] );
+    }
+
+    $wp_customize->add_setting( 'haber_live_manual_mode', [
+        'default'           => false,
+        'sanitize_callback' => 'haber_sitesi_sanitize_checkbox',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_manual_mode', [
+        'label'       => __( 'Manuel canlı yayın kartını kullan', 'haber-sitesi' ),
+        'description' => __( 'Etkinleştirildiğinde canlı yayın kartı aşağıdaki içerik ile doldurulur.', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'checkbox',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_title', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_title', [
+        'label'   => __( 'Canlı yayın başlığı', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_live',
+        'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_description', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_rich_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_description', [
+        'label'   => __( 'Kısa özet', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_live',
+        'type'    => 'textarea',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_category', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_category', [
+        'label'       => __( 'Kategori etiketi', 'haber-sitesi' ),
+        'description' => __( 'Örn: Canlı Yayın', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_presenter', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_presenter', [
+        'label'   => __( 'Sunucu / Muhabir', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_live',
+        'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_time', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_time', [
+        'label'       => __( 'Yayın saati', 'haber-sitesi' ),
+        'description' => __( 'Örn: 21:30 • Şimdi Canlı', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_cta_label', [
+        'default'           => __( 'Yayını Aç', 'haber-sitesi' ),
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_cta_label', [
+        'label'   => __( 'CTA etiketi', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_live',
+        'type'    => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_cta_url', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_url_setting',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_cta_url', [
+        'label'       => __( 'CTA bağlantısı', 'haber-sitesi' ),
+        'description' => __( 'Yayın bağlantısı veya özel sayfa adresi.', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'url',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_views', [
+        'default'           => 0,
+        'sanitize_callback' => 'absint',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_views', [
+        'label'       => __( 'İzlenme sayısı', 'haber-sitesi' ),
+        'description' => __( 'Manuel modda canlı yayın kartındaki izlenme sayısı.', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'number',
+        'input_attrs' => [
+            'min'  => 0,
+            'step' => 1,
+        ],
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_comments', [
+        'default'           => 0,
+        'sanitize_callback' => 'absint',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_comments', [
+        'label'       => __( 'Yorum sayısı', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'number',
+        'input_attrs' => [
+            'min'  => 0,
+            'step' => 1,
+        ],
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_reading_time', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_reading_time', [
+        'label'       => __( 'Yayın süresi / okuma', 'haber-sitesi' ),
+        'description' => __( 'Örn: 45 dk canlı yayın', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_schedule_title', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_schedule_title', [
+        'label'       => __( 'Program başlığı', 'haber-sitesi' ),
+        'description' => __( 'Yan sütundaki yayın akışı başlığı. Boş bırakılırsa varsayılan kullanılır.', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'text',
+    ] );
+
+    $wp_customize->add_setting( 'haber_live_embed', [
+        'default'           => '',
+        'sanitize_callback' => 'haber_sitesi_sanitize_embed',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_live_embed', [
+        'label'       => __( 'Yerleşik canlı yayın kodu', 'haber-sitesi' ),
+        'description' => __( 'YouTube, Vimeo veya kendi canlı yayın iframe/video kodunuzu ekleyin.', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_live',
+        'type'        => 'textarea',
     ] );
 
     $wp_customize->add_setting( 'haber_show_breaking_news', [

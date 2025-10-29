@@ -53,6 +53,7 @@ $notice_messages = [
     'term_exists'          => __( 'Bu isim veya slaş zaten kullanımda.', 'haber-sitesi' ),
     'invalid_term_name'    => __( 'Kategori adı geçersiz karakterler içeriyor.', 'haber-sitesi' ),
     'category_error'       => __( 'Kategori oluşturulamadı. Lütfen tekrar deneyin.', 'haber-sitesi' ),
+    'live_saved'           => __( 'Canlı yayın ayarları güncellendi.', 'haber-sitesi' ),
 ];
 
 $snapshot                = haber_sitesi_get_management_snapshot();
@@ -77,6 +78,7 @@ $activity_peak_value     = $activity_data['peak']['value'] ?? 0;
 $category_parent_select  = $snapshot['category_parent_select'];
 
 $portal_redirect = get_permalink();
+$live_settings   = haber_sitesi_get_live_center_settings();
 ?>
 
 <main class="haber-portal">
@@ -109,6 +111,7 @@ $portal_redirect = get_permalink();
         <nav class="haber-portal__quick-nav" aria-label="<?php esc_attr_e( 'Portal kısayolları', 'haber-sitesi' ); ?>">
             <button class="haber-portal__quick-link" data-target="staff"><?php esc_html_e( 'Ekip Yönetimi', 'haber-sitesi' ); ?></button>
             <button class="haber-portal__quick-link" data-target="content"><?php esc_html_e( 'İçerik Akışı', 'haber-sitesi' ); ?></button>
+            <button class="haber-portal__quick-link" data-target="live"><?php esc_html_e( 'Canlı Yayın', 'haber-sitesi' ); ?></button>
             <button class="haber-portal__quick-link" data-target="categories"><?php esc_html_e( 'Kategori Kontrolü', 'haber-sitesi' ); ?></button>
             <button class="haber-portal__quick-link" data-target="activity"><?php esc_html_e( 'Performans', 'haber-sitesi' ); ?></button>
             <a class="haber-portal__quick-link haber-portal__quick-link--external" href="<?php echo esc_url( admin_url() ); ?>" target="_blank" rel="noopener noreferrer">
@@ -213,6 +216,99 @@ $portal_redirect = get_permalink();
                         </form>
                     </div>
                 <?php endif; ?>
+            </div>
+        </article>
+
+        <article id="live" class="haber-portal__panel haber-portal__panel--glass">
+            <header class="haber-portal__panel-header">
+                <h2 class="haber-portal__panel-title"><?php esc_html_e( 'Canlı Yayın Merkezi', 'haber-sitesi' ); ?></h2>
+                <p class="haber-portal__panel-subtitle"><?php esc_html_e( 'Anasayfadaki canlı yayın sahnesini manuel olarak yönetin ve embed kodunu güncelleyin.', 'haber-sitesi' ); ?></p>
+            </header>
+            <div class="haber-portal__panel-body">
+                <div class="haber-portal__form-card">
+                    <h3 class="haber-portal__form-title"><?php esc_html_e( 'Manuel canlı yayın kartı', 'haber-sitesi' ); ?></h3>
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="haber-portal__form">
+                        <?php wp_nonce_field( 'haber_sitesi_update_live' ); ?>
+                        <input type="hidden" name="action" value="haber_sitesi_portal" />
+                        <input type="hidden" name="haber_sitesi_action" value="update_live" />
+                        <input type="hidden" name="redirect_to" value="<?php echo esc_url( $portal_redirect ); ?>" />
+
+                        <div class="haber-portal__form-row">
+                            <label class="haber-portal__label" for="haber-live-manual"><?php esc_html_e( 'Manuel mod', 'haber-sitesi' ); ?></label>
+                            <label class="haber-portal__checkbox" for="haber-live-manual">
+                                <input id="haber-live-manual" type="checkbox" name="haber_live_manual_mode" value="1" <?php checked( $live_settings['manual'] ); ?> />
+                                <span><?php esc_html_e( 'Canlı yayın sahnesini aşağıdaki içerikle sabitle', 'haber-sitesi' ); ?></span>
+                            </label>
+                            <p class="haber-portal__muted"><?php esc_html_e( 'Manuel mod kapalıyken canlı yayın kartı otomatik olarak canlı yayın kategorisinden doldurulur.', 'haber-sitesi' ); ?></p>
+                        </div>
+
+                        <div class="haber-portal__form-row">
+                            <label class="haber-portal__label" for="haber-live-title"><?php esc_html_e( 'Başlık', 'haber-sitesi' ); ?></label>
+                            <input class="haber-portal__input" id="haber-live-title" type="text" name="haber_live_title" value="<?php echo esc_attr( $live_settings['title'] ); ?>" />
+                        </div>
+
+                        <div class="haber-portal__form-row">
+                            <label class="haber-portal__label" for="haber-live-description"><?php esc_html_e( 'Kısa özet', 'haber-sitesi' ); ?></label>
+                            <textarea class="haber-portal__textarea" id="haber-live-description" name="haber_live_description" rows="4"><?php echo esc_textarea( $live_settings['description'] ); ?></textarea>
+                        </div>
+
+                        <div class="haber-portal__form-grid">
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-category"><?php esc_html_e( 'Kategori etiketi', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-category" type="text" name="haber_live_category" value="<?php echo esc_attr( $live_settings['category'] ); ?>" />
+                            </div>
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-presenter"><?php esc_html_e( 'Sunucu / muhabir', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-presenter" type="text" name="haber_live_presenter" value="<?php echo esc_attr( $live_settings['presenter'] ); ?>" />
+                            </div>
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-time"><?php esc_html_e( 'Yayın saati', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-time" type="text" name="haber_live_time" value="<?php echo esc_attr( $live_settings['time'] ); ?>" />
+                            </div>
+                        </div>
+
+                        <div class="haber-portal__form-grid">
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-cta-label"><?php esc_html_e( 'CTA etiketi', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-cta-label" type="text" name="haber_live_cta_label" value="<?php echo esc_attr( $live_settings['cta_label'] ); ?>" />
+                            </div>
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-cta-url"><?php esc_html_e( 'CTA bağlantısı', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-cta-url" type="url" name="haber_live_cta_url" value="<?php echo esc_attr( $live_settings['cta_url'] ); ?>" placeholder="https://" />
+                            </div>
+                        </div>
+
+                        <div class="haber-portal__form-grid">
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-views"><?php esc_html_e( 'İzlenme sayısı', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-views" type="number" min="0" step="1" name="haber_live_views" value="<?php echo esc_attr( $live_settings['views'] ); ?>" />
+                            </div>
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-comments"><?php esc_html_e( 'Yorum sayısı', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-comments" type="number" min="0" step="1" name="haber_live_comments" value="<?php echo esc_attr( $live_settings['comments'] ); ?>" />
+                            </div>
+                            <div class="haber-portal__form-row">
+                                <label class="haber-portal__label" for="haber-live-reading"><?php esc_html_e( 'Yayın süresi / okuma', 'haber-sitesi' ); ?></label>
+                                <input class="haber-portal__input" id="haber-live-reading" type="text" name="haber_live_reading_time" value="<?php echo esc_attr( $live_settings['reading_time'] ); ?>" />
+                            </div>
+                        </div>
+
+                        <div class="haber-portal__form-row">
+                            <label class="haber-portal__label" for="haber-live-schedule"><?php esc_html_e( 'Program başlığı', 'haber-sitesi' ); ?></label>
+                            <input class="haber-portal__input" id="haber-live-schedule" type="text" name="haber_live_schedule_title" value="<?php echo esc_attr( $live_settings['schedule_title'] ); ?>" />
+                        </div>
+
+                        <div class="haber-portal__form-row">
+                            <label class="haber-portal__label" for="haber-live-embed"><?php esc_html_e( 'Yerleşik yayın kodu', 'haber-sitesi' ); ?></label>
+                            <textarea class="haber-portal__textarea haber-portal__textarea--code" id="haber-live-embed" name="haber_live_embed" rows="4"><?php echo esc_textarea( $live_settings['embed'] ); ?></textarea>
+                            <p class="haber-portal__muted"><?php esc_html_e( 'YouTube veya özel canlı yayın iframe kodunu buraya ekleyebilirsiniz.', 'haber-sitesi' ); ?></p>
+                        </div>
+
+                        <div class="haber-portal__form-actions">
+                            <button type="submit" class="haber-portal__button haber-portal__button--primary"><?php esc_html_e( 'Ayarları Kaydet', 'haber-sitesi' ); ?></button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </article>
 

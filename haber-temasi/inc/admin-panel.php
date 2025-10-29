@@ -362,6 +362,38 @@ function haber_sitesi_process_management_request( $default_redirect ) {
         exit;
     }
 
+    if ( 'update_live' === $action ) {
+        if ( ! current_user_can( 'edit_theme_options' ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'error', $redirect_url ) );
+            exit;
+        }
+
+        check_admin_referer( 'haber_sitesi_update_live' );
+
+        $settings = [
+            'manual'         => isset( $_POST['haber_live_manual_mode'] ),
+            'title'          => wp_unslash( $_POST['haber_live_title'] ?? '' ),
+            'description'    => wp_unslash( $_POST['haber_live_description'] ?? '' ),
+            'category'       => wp_unslash( $_POST['haber_live_category'] ?? '' ),
+            'presenter'      => wp_unslash( $_POST['haber_live_presenter'] ?? '' ),
+            'time'           => wp_unslash( $_POST['haber_live_time'] ?? '' ),
+            'cta_label'      => wp_unslash( $_POST['haber_live_cta_label'] ?? '' ),
+            'cta_url'        => wp_unslash( $_POST['haber_live_cta_url'] ?? '' ),
+            'views'          => wp_unslash( $_POST['haber_live_views'] ?? '' ),
+            'comments'       => wp_unslash( $_POST['haber_live_comments'] ?? '' ),
+            'reading_time'   => wp_unslash( $_POST['haber_live_reading_time'] ?? '' ),
+            'schedule_title' => wp_unslash( $_POST['haber_live_schedule_title'] ?? '' ),
+            'embed'          => wp_unslash( $_POST['haber_live_embed'] ?? '' ),
+        ];
+
+        if ( function_exists( 'haber_sitesi_update_live_center_settings' ) ) {
+            haber_sitesi_update_live_center_settings( $settings );
+        }
+
+        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'live_saved', $redirect_url ) );
+        exit;
+    }
+
     return false;
 }
 
@@ -431,6 +463,7 @@ function haber_sitesi_render_admin_page() {
         'term_exists'           => [ 'class' => 'error', 'message' => __( 'Bu isim veya slaş ile eşleşen bir kategori zaten var.', 'haber-sitesi' ) ],
         'invalid_term_name'     => [ 'class' => 'error', 'message' => __( 'Kategori adı geçersiz karakterler içeriyor.', 'haber-sitesi' ) ],
         'category_error'        => [ 'class' => 'error', 'message' => __( 'Kategori oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
+        'live_saved'            => [ 'class' => 'updated', 'message' => __( 'Canlı yayın ayarları kaydedildi.', 'haber-sitesi' ) ],
     ];
 
     $snapshot = haber_sitesi_get_management_snapshot();
