@@ -6,7 +6,7 @@
         const searchToggle = $('.mobile-header__search-toggle');
         const searchForm = $('#mobile-search');
         const searchField = $('#mobile-search-field');
-        const i18n = window.haberSiteInteract || window.haberSitePortal || {};
+        const i18n = window.haberSiteiInteract || {};
 
         const getMessage = function (key, fallback) {
             if (Object.prototype.hasOwnProperty.call(i18n, key) && i18n[key]) {
@@ -328,6 +328,81 @@
 
                 setActive(activeIndex, false);
                 startAuto();
+            });
+        }
+
+        const proCarousels = $('[data-pro-carousel]');
+
+        if (proCarousels.length) {
+            proCarousels.each(function () {
+                const carousel = $(this);
+                const track = carousel.find('[data-pro-track]');
+                const prev = carousel.find('[data-pro-prev]');
+                const next = carousel.find('[data-pro-next]');
+                const items = track.children();
+
+                if (!track.length || !items.length) {
+                    prev.prop('disabled', true);
+                    next.prop('disabled', true);
+                    return;
+                }
+
+                if (items.length <= 1) {
+                    prev.prop('disabled', true);
+                    next.prop('disabled', true);
+                }
+
+                const trackNode = track.get(0);
+
+                const getStep = function () {
+                    if (!items.length) {
+                        return track.outerWidth() || 0;
+                    }
+
+                    const firstItem = items.first();
+                    const width = firstItem.outerWidth(true);
+
+                    if (!width) {
+                        return track.outerWidth() || 0;
+                    }
+
+                    return width;
+                };
+
+                const scrollBy = function (direction) {
+                    if (!trackNode) {
+                        return;
+                    }
+
+                    const step = getStep();
+
+                    if (!step) {
+                        return;
+                    }
+
+                    trackNode.scrollBy({
+                        left: step * direction,
+                        behavior: 'smooth'
+                    });
+                };
+
+                prev.on('click', function () {
+                    scrollBy(-1);
+                });
+
+                next.on('click', function () {
+                    scrollBy(1);
+                });
+
+                track.on('keydown', function (event) {
+                    if (event.key === 'ArrowRight') {
+                        event.preventDefault();
+                        scrollBy(1);
+                    } else if (event.key === 'ArrowLeft') {
+                        event.preventDefault();
+                        scrollBy(-1);
+                    }
+                });
             });
         }
 

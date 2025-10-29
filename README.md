@@ -11,6 +11,7 @@
 - Tercih edilen hareket ayarlarına ve sekme görünürlüğüne göre otomatik döngüyü duraklatan, odaklandığınızda yeniden başlatan akıllı manşet slider kontrolü
 - Manşetin altında video haberler ve foto galeri vitrinleri yatay kaydırma kontrolleriyle öne çıkar
 - Editör seçkisini kategori panellerine bölen 3 kolonlu ızgara, Haber Merkezi kartları ve canlı haber akışı zaman çizgisi
+- Haber Merkezi Panosu; canlı yayın metrik kartları, sürüklenebilir özel dosya vitrinleri ve podcast stüdyosu listesiyle profesyonel görünüm sunar
 - Yayıncı ekip kartları, rol rozetleri ve son içerik bağlantılarıyla "Haber Merkezi" yazar vitrini
 - Editör Masası & Yorumlar bölümüyle çok yorumlanan başlıklar için koyu arayüzlü vitrin, yan sütunda trendler/hava durumu/bülten kartları
 - Kahraman manşette cihaz içi paylaşım, favorilere kaydetme ve gerçek zamanlı görüntülenme sayaçlarıyla etkileşimli haber kartları

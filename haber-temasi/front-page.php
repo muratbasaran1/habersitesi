@@ -387,6 +387,230 @@ if ( $trending_query->have_posts() ) {
     wp_reset_postdata();
 }
 
+$investigation_items = [];
+
+$investigation_query_args = [
+    'post_type'           => 'post',
+    'posts_per_page'      => 5,
+    'ignore_sticky_posts' => 1,
+    'post_status'         => 'publish',
+    'no_found_rows'       => true,
+    'post__not_in'        => $excluded_ids,
+];
+
+$investigation_term = get_category_by_slug( 'ozel-dosya' );
+
+if ( $investigation_term && ! is_wp_error( $investigation_term ) ) {
+    $investigation_query_args['cat'] = $investigation_term->term_id;
+} else {
+    $investigation_query_args['tax_query'] = [
+        [
+            'taxonomy' => 'post_tag',
+            'field'    => 'slug',
+            'terms'    => [ 'ozel-dosya', 'analiz', 'arastirma' ],
+        ],
+    ];
+}
+
+$investigation_query = new WP_Query( $investigation_query_args );
+
+if ( $investigation_query->have_posts() ) {
+    while ( $investigation_query->have_posts() ) {
+        $investigation_query->the_post();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 26 );
+
+        if ( ! empty( $item ) ) {
+            $investigation_items[] = $item;
+            $excluded_ids[]        = $post_id;
+        }
+    }
+    wp_reset_postdata();
+}
+
+$podcast_items = [];
+
+$podcast_query_args = [
+    'post_type'           => 'post',
+    'posts_per_page'      => 5,
+    'ignore_sticky_posts' => 1,
+    'post_status'         => 'publish',
+    'no_found_rows'       => true,
+    'post__not_in'        => $excluded_ids,
+    'tax_query'           => [
+        'relation' => 'OR',
+        [
+            'taxonomy' => 'post_format',
+            'field'    => 'slug',
+            'terms'    => [ 'post-format-audio' ],
+        ],
+        [
+            'taxonomy' => 'category',
+            'field'    => 'slug',
+            'terms'    => [ 'podcast', 'radyo', 'canli-yayin' ],
+        ],
+    ],
+];
+
+$podcast_query = new WP_Query( $podcast_query_args );
+
+if ( $podcast_query->have_posts() ) {
+    while ( $podcast_query->have_posts() ) {
+        $podcast_query->the_post();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 20 );
+
+        if ( ! empty( $item ) ) {
+            $podcast_items[] = $item;
+            $excluded_ids[]  = $post_id;
+        }
+    }
+    wp_reset_postdata();
+}
+
+$activity_snapshot = function_exists( 'haber_sitesi_get_monthly_activity' ) ? haber_sitesi_get_monthly_activity( 6 ) : [];
+$activity_total    = isset( $activity_snapshot['total'] ) ? (int) $activity_snapshot['total'] : 0;
+$activity_average  = isset( $activity_snapshot['average'] ) ? (int) $activity_snapshot['average'] : 0;
+$activity_peak     = isset( $activity_snapshot['peak'] ) && is_array( $activity_snapshot['peak'] ) ? $activity_snapshot['peak'] : [];
+$activity_peak_lbl = isset( $activity_peak['label'] ) ? $activity_peak['label'] : '';
+$activity_peak_val = isset( $activity_peak['value'] ) ? (int) $activity_peak['value'] : 0;
+
+$week_posts_query = new WP_Query(
+    [
+        'post_type'           => 'post',
+        'post_status'         => 'publish',
+        'ignore_sticky_posts' => 1,
+        'no_found_rows'       => false,
+        'posts_per_page'      => 1,
+        'fields'              => 'ids',
+        'date_query'          => [
+            [
+                'after'     => '1 week ago',
+                'inclusive' => true,
+            ],
+        ],
+    ]
+);
+
+$week_post_count = (int) $week_posts_query->found_posts;
+wp_reset_postdata();
+
+$today_posts_query = new WP_Query(
+    [
+        'post_type'           => 'post',
+        'post_status'         => 'publish',
+        'ignore_sticky_posts' => 1,
+        'no_found_rows'       => false,
+        'posts_per_page'      => 1,
+        'fields'              => 'ids',
+        'date_query'          => [
+            [
+                'after'     => 'today',
+                'inclusive' => true,
+            ],
+        ],
+    ]
+);
+
+$today_post_count = (int) $today_posts_query->found_posts;
+wp_reset_postdata();
+
+$post_counts      = wp_count_posts();
+$published_posts  = $post_counts && isset( $post_counts->publish ) ? (int) $post_counts->publish : 0;
+$category_total   = wp_count_terms( 'category', [ 'hide_empty' => false ] );
+$category_total   = ! is_wp_error( $category_total ) ? (int) $category_total : 0;
+$comment_counts   = wp_count_comments();
+$approved_comments = $comment_counts ? (int) $comment_counts->approved : 0;
+$recent_comments   = get_comments(
+    [
+        'status'     => 'approve',
+        'count'      => true,
+        'date_query' => [
+            [
+                'after'     => '1 week ago',
+                'inclusive' => true,
+            ],
+        ],
+    ]
+);
+
+if ( is_wp_error( $recent_comments ) ) {
+    $recent_comments = 0;
+}
+
+$user_counts          = count_users();
+$editorial_role_keys  = apply_filters(
+    'haber_sitesi_editorial_metric_roles',
+    [ 'administrator', 'editor', 'author', 'contributor', 'haber_editoru', 'haber_yazari', 'haber_muhabiri' ]
+);
+$editorial_roles      = 0;
+$total_staff          = isset( $user_counts['total_users'] ) ? (int) $user_counts['total_users'] : 0;
+$available_role_counts = isset( $user_counts['avail_roles'] ) && is_array( $user_counts['avail_roles'] ) ? $user_counts['avail_roles'] : [];
+
+foreach ( (array) $editorial_role_keys as $role_key ) {
+    $role_key = sanitize_key( $role_key );
+
+    if ( isset( $available_role_counts[ $role_key ] ) ) {
+        $editorial_roles += (int) $available_role_counts[ $role_key ];
+    }
+}
+
+$today_meta = $today_post_count
+    ? sprintf( __( 'Bugün %s yeni başlık', 'haber-sitesi' ), number_format_i18n( $today_post_count ) )
+    : __( 'Bugün yeni başlık planlanmıyor', 'haber-sitesi' );
+
+$activity_meta = '';
+
+if ( $activity_peak_lbl && $activity_peak_val ) {
+    $activity_meta = sprintf(
+        __( 'Zirve: %1$s (%2$s içerik)', 'haber-sitesi' ),
+        $activity_peak_lbl,
+        number_format_i18n( $activity_peak_val )
+    );
+} elseif ( $activity_average ) {
+    $activity_meta = sprintf(
+        __( 'Aylık ortalama %s içerik', 'haber-sitesi' ),
+        number_format_i18n( $activity_average )
+    );
+} else {
+    $activity_meta = __( 'Aktif yayın akışı izleniyor', 'haber-sitesi' );
+}
+
+$insight_metrics = [
+    [
+        'icon' => '🗓️',
+        'label' => __( 'Son 7 Gün', 'haber-sitesi' ),
+        'value' => number_format_i18n( $week_post_count ),
+        'meta'  => $today_meta,
+    ],
+    [
+        'icon' => '📈',
+        'label' => __( 'Aylık Yayın Toplamı', 'haber-sitesi' ),
+        'value' => number_format_i18n( $activity_total ),
+        'meta'  => $activity_meta,
+    ],
+    [
+        'icon' => '📰',
+        'label' => __( 'Yayındaki Haberler', 'haber-sitesi' ),
+        'value' => number_format_i18n( $published_posts ),
+        'meta'  => sprintf( __( '%s aktif kategori', 'haber-sitesi' ), number_format_i18n( $category_total ) ),
+    ],
+    [
+        'icon' => '💬',
+        'label' => __( 'Onaylı Yorumlar', 'haber-sitesi' ),
+        'value' => number_format_i18n( $approved_comments ),
+        'meta'  => sprintf( __( 'Son 7 günde %s yorum', 'haber-sitesi' ), number_format_i18n( (int) $recent_comments ) ),
+    ],
+    [
+        'icon' => '🧑‍💼',
+        'label' => __( 'Aktif Editör Ekibi', 'haber-sitesi' ),
+        'value' => number_format_i18n( $editorial_roles ),
+        'meta'  => sprintf( __( 'Toplam ekip: %s kişi', 'haber-sitesi' ), number_format_i18n( $total_staff ) ),
+    ],
+];
+
+$has_pro_modules = ! empty( $investigation_items ) || ! empty( $podcast_items );
+
 $author_roles = apply_filters(
     'haber_sitesi_front_author_roles',
     [ 'haber_editoru', 'editor', 'haber_yazari', 'author', 'haber_muhabiri', 'contributor' ]
@@ -1070,6 +1294,89 @@ $direction_labels = [
                 <?php else : ?>
                     <p class="front-empty"><?php esc_html_e( 'Henüz canlı akış bulunmuyor.', 'haber-sitesi' ); ?></p>
                 <?php endif; ?>
+            </section>
+
+            <section class="front-block front-block--insights" aria-label="<?php esc_attr_e( 'Profesyonel haber merkezi özeti', 'haber-sitesi' ); ?>">
+                <div class="front-block__header">
+                    <h2 class="front-block__title"><?php esc_html_e( 'Haber Merkezi Panosu', 'haber-sitesi' ); ?></h2>
+                    <p class="front-block__subtitle"><?php esc_html_e( 'Canlı metrikler, özel dosyalar ve podcast sahnesi', 'haber-sitesi' ); ?></p>
+                </div>
+                <div class="front-pro__grid">
+                    <div class="front-pro__column front-pro__column--metrics">
+                        <div class="front-insights" role="list">
+                            <?php foreach ( $insight_metrics as $metric ) : ?>
+                                <article class="front-insights__card" role="listitem">
+                                    <span class="front-insights__icon" aria-hidden="true"><?php echo esc_html( $metric['icon'] ); ?></span>
+                                    <div class="front-insights__meta">
+                                        <h3 class="front-insights__label"><?php echo esc_html( $metric['label'] ); ?></h3>
+                                        <div class="front-insights__value"><?php echo esc_html( $metric['value'] ); ?></div>
+                                        <p class="front-insights__note"><?php echo esc_html( $metric['meta'] ); ?></p>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="front-pro__column front-pro__column--modules">
+                        <?php if ( $has_pro_modules ) : ?>
+                            <?php if ( ! empty( $investigation_items ) ) : ?>
+                                <div class="front-pro__module" data-pro-carousel>
+                                    <div class="front-pro__module-header">
+                                        <h3 class="front-pro__module-title"><?php esc_html_e( 'Özel Dosyalar', 'haber-sitesi' ); ?></h3>
+                                        <div class="front-pro__controls">
+                                            <button class="front-pro__control" type="button" data-pro-prev aria-label="<?php esc_attr_e( 'Önceki dosya', 'haber-sitesi' ); ?>" title="<?php esc_attr_e( 'Önceki dosya', 'haber-sitesi' ); ?>">&#x2039;</button>
+                                            <button class="front-pro__control" type="button" data-pro-next aria-label="<?php esc_attr_e( 'Sonraki dosya', 'haber-sitesi' ); ?>" title="<?php esc_attr_e( 'Sonraki dosya', 'haber-sitesi' ); ?>">&#x203a;</button>
+                                        </div>
+                                    </div>
+                                    <div class="front-pro__track" data-pro-track role="list" tabindex="0" aria-label="<?php esc_attr_e( 'Özel dosya vitrinini kaydır', 'haber-sitesi' ); ?>">
+                                        <?php foreach ( $investigation_items as $item ) : ?>
+                                            <article class="front-investigation" role="listitem">
+                                                <a class="front-investigation__media" href="<?php echo esc_url( $item['permalink'] ); ?>">
+                                                    <?php if ( $item['image'] ) : ?>
+                                                        <img src="<?php echo esc_url( $item['image'] ); ?>" alt="" />
+                                                    <?php else : ?>
+                                                        <span class="front-investigation__placeholder" aria-hidden="true">🕵️</span>
+                                                    <?php endif; ?>
+                                                </a>
+                                                <div class="front-investigation__body">
+                                                    <span class="front-investigation__badge"><?php echo esc_html( $item['category'] ? $item['category'] : __( 'Özel Dosya', 'haber-sitesi' ) ); ?></span>
+                                                    <h4 class="front-investigation__title"><a href="<?php echo esc_url( $item['permalink'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a></h4>
+                                                    <p class="front-investigation__excerpt"><?php echo wp_kses_post( $item['excerpt'] ); ?></p>
+                                                    <div class="front-investigation__meta">
+                                                        <span>👁️ <?php echo esc_html( haber_sitesi_format_count( $item['views'] ) ); ?></span>
+                                                        <span>⏱️ <?php echo esc_html( $item['reading_time'] ); ?></span>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ( ! empty( $podcast_items ) ) : ?>
+                                <div class="front-pro__module front-pro__module--audio">
+                                    <div class="front-pro__module-header">
+                                        <h3 class="front-pro__module-title"><?php esc_html_e( 'Podcast Stüdyosu', 'haber-sitesi' ); ?></h3>
+                                        <a class="front-pro__module-link" href="<?php echo esc_url( home_url( '/podcast' ) ); ?>"><?php esc_html_e( 'Tüm bölümler', 'haber-sitesi' ); ?></a>
+                                    </div>
+                                    <ul class="front-audio" role="list">
+                                        <?php foreach ( $podcast_items as $item ) : ?>
+                                            <li class="front-audio__item" role="listitem">
+                                                <span class="front-audio__time"><?php echo esc_html( $item['time'] ); ?></span>
+                                                <div class="front-audio__content">
+                                                    <a class="front-audio__title" href="<?php echo esc_url( $item['permalink'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a>
+                                                    <p class="front-audio__excerpt"><?php echo wp_kses_post( $item['excerpt'] ); ?></p>
+                                                </div>
+                                                <a class="front-audio__cta" href="<?php echo esc_url( $item['permalink'] ); ?>" aria-label="<?php echo esc_attr( sprintf( __( '%s bölümünü dinle', 'haber-sitesi' ), $item['title'] ) ); ?>">▶</a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <p class="front-empty front-empty--pro"><?php esc_html_e( 'Henüz özel dosya ya da podcast eklenmedi.', 'haber-sitesi' ); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </section>
         </div>
 

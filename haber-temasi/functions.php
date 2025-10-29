@@ -358,7 +358,7 @@ function haber_sitesi_enqueue_assets() {
 
     wp_localize_script(
         'haber-sitesi-navigation',
-        'haberSiteInteract',
+        'haberSiteiInteract',
         [
             'shareCopied'       => __( 'Bağlantı panoya kopyalandı.', 'haber-sitesi' ),
             'shareCopyFallback' => __( 'Bağlantı kopyalanamadı. Lütfen paylaşım bağlantısını manuel olarak açın.', 'haber-sitesi' ),
@@ -366,12 +366,6 @@ function haber_sitesi_enqueue_assets() {
             'savedLabel'        => __( 'Kaydedildi', 'haber-sitesi' ),
             'liveUpdated'       => __( 'Canlı yayın güncellendi: %s', 'haber-sitesi' ),
         ]
-    );
-
-    wp_add_inline_script(
-        'haber-sitesi-navigation',
-        'window.haberSitePortal = window.haberSitePortal || window.haberSiteInteract;',
-        'before'
     );
 }
 add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_assets' );
