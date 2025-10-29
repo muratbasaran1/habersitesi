@@ -48,4 +48,4 @@ Tema standart WordPress fonksiyonlarını kullanır ve ek bağımlılık gerekti
 - Haber Yönetimi panelindeki **Birleştirme Kontrolü** kartı, tema dosyalarında standart birleştirme işaretlerini tarar.
 - Paneldeki **Taramayı Yenile** düğmesi, taramayı anında yenileyerek işaretlerin temizlendiğini doğrulamanızı sağlar.
 - Aynı bilgiler yönetim panellerinde uyarı olarak da gösterilir; uyarılar kaybolana kadar dosyalardaki işaretleri temizlemeniz gerekir.
-- Yazı, kategori, kullanıcı ve yorum kayıtları kaydedilirken birleştirme işaretlerinden otomatik olarak arındırılır; böylece veritabanı kaynaklı `<<<<<<<`, `=======` veya `>>>>>>>` satırları canlı sitede görünmez.
+- Yazı, kategori, kullanıcı ve yorum kayıtları kaydedilirken birleştirme işaretlerinden otomatik olarak arındırılır; böylece veritabanı kaynaklı çatışma satırları canlı sitede görünmez.

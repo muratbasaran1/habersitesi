@@ -374,6 +374,25 @@ if ( ! defined( 'HABER_SITESI_CONFLICT_TRANSIENT' ) ) {
 }
 
 /**
+ * Birleştirme işareti belirteçlerini döndürür.
+ *
+ * @return array<string, string>
+ */
+function haber_sitesi_get_conflict_marker_tokens() {
+    static $tokens = null;
+
+    if ( null === $tokens ) {
+        $tokens = [
+            'start'  => str_repeat( '<', 7 ),
+            'middle' => str_repeat( '=', 7 ),
+            'end'    => str_repeat( '>', 7 ),
+        ];
+    }
+
+    return $tokens;
+}
+
+/**
  * Tema dosyalarında birleştirme işaretleri olup olmadığını döndürür.
  *
  * @return array<int, string>
@@ -391,10 +410,8 @@ function haber_sitesi_get_conflict_marker_files() {
         return $cached;
     }
 
-    $marker_start = str_repeat( '<', 7 ) . ' ';
-    $marker_end   = str_repeat( '>', 7 ) . ' ';
-    $middle_line  = str_repeat( '=', 7 );
-    $patterns     = [ $marker_start, $marker_end, $middle_line ];
+    $tokens   = haber_sitesi_get_conflict_marker_tokens();
+    $patterns = [ $tokens['start'], $tokens['middle'], $tokens['end'] ];
     $directory = get_template_directory();
     $files     = [];
 
@@ -542,12 +559,29 @@ function haber_sitesi_strip_conflict_markers_from_string( $content ) {
         return $content;
     }
 
-    if ( false === strpos( $content, '<<<<<<<' ) ) {
+    $tokens = haber_sitesi_get_conflict_marker_tokens();
+    $needle = false;
+
+    foreach ( $tokens as $token ) {
+        if ( false !== strpos( $content, $token ) ) {
+            $needle = true;
+            break;
+        }
+    }
+
+    if ( ! $needle ) {
         return $content;
     }
 
+    $pattern = sprintf(
+        '/%1$s[^\r\n]*\r?\n([\s\S]*?)\r?\n%2$s\r?\n([\s\S]*?)\r?\n%3$s[^\r\n]*(?:\r?\n|$)/',
+        preg_quote( $tokens['start'], '/' ),
+        preg_quote( $tokens['middle'], '/' ),
+        preg_quote( $tokens['end'], '/' )
+    );
+
     $content = preg_replace_callback(
-        '/<<<<<<<[^\r\n]*\r?\n([\s\S]*?)\r?\n=======\r?\n([\s\S]*?)\r?\n>>>>>>>[^\r\n]*(?:\r?\n|$)/',
+        $pattern,
         function ( $matches ) {
             $current   = $matches[1];
             $incoming  = $matches[2];
@@ -559,9 +593,23 @@ function haber_sitesi_strip_conflict_markers_from_string( $content ) {
         $content
     );
 
-    $content = preg_replace( '/<<<<<<<[^\r\n]*(?:\r?\n|$)/', '', $content );
-    $content = preg_replace( '/=======(?:\r?\n|$)/', '', $content );
-    $content = preg_replace( '/>>>>>>>[^\r\n]*(?:\r?\n|$)/', '', $content );
+    $content = preg_replace(
+        sprintf( '/%s[^\r\n]*(?:\r?\n|$)/', preg_quote( $tokens['start'], '/' ) ),
+        '',
+        $content
+    );
+
+    $content = preg_replace(
+        sprintf( '/%s(?:\r?\n|$)/', preg_quote( $tokens['middle'], '/' ) ),
+        '',
+        $content
+    );
+
+    $content = preg_replace(
+        sprintf( '/%s[^\r\n]*(?:\r?\n|$)/', preg_quote( $tokens['end'], '/' ) ),
+        '',
+        $content
+    );
 
     return $content;
 }
