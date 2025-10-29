@@ -4,7 +4,6 @@
 
 ## Özellikler
 - Yapışkan mobil üst bilgi, yatay kaydırmalı kategori şeridi ve otomatik dönen son dakika bandı
-- `mobile-only` ve `desktop-only` yardımcı sınıflarıyla mobil/masaüstü arayüzler karışmadan çalışır; mobil alt gezinme masaüstünde otomatik gizlenir
 - Masaüstünde yardımcı menü, geniş arama çubuğu ve kırmızı son dakika şeridiyle profesyonel üst bilgi düzeni
 - Piyasa göstergeleri ve hava durumu etiketleriyle açılan üst çubuk, TV Türk tarzı manşet slider'ı ve sağda kart liste alanıyla masaüstü odaklı ana sayfa
 - Canlı yayın başlığı, program çizelgesi ve anlık istatistikleriyle senkronize çalışan "Canlı Yayın Merkezi"
@@ -12,7 +11,6 @@
 - Tercih edilen hareket ayarlarına ve sekme görünürlüğüne göre otomatik döngüyü duraklatan, odaklandığınızda yeniden başlatan akıllı manşet slider kontrolü
 - Manşetin altında video haberler ve foto galeri vitrinleri yatay kaydırma kontrolleriyle öne çıkar
 - Editör seçkisini kategori panellerine bölen 3 kolonlu ızgara, Haber Merkezi kartları ve canlı haber akışı zaman çizgisi
-- Sekmeli "Gündem Ajandası" bölümü; kategori bazlı lider haber kartı, destek liste ve otomatik döngülü tab yapısı
 - Haber Merkezi Panosu; canlı yayın metrik kartları, sürüklenebilir özel dosya vitrinleri ve podcast stüdyosu listesiyle profesyonel görünüm sunar
 - Yayıncı ekip kartları, rol rozetleri ve son içerik bağlantılarıyla "Haber Merkezi" yazar vitrini
 - Editör Masası & Yorumlar bölümüyle çok yorumlanan başlıklar için koyu arayüzlü vitrin, yan sütunda trendler/hava durumu/bülten kartları
