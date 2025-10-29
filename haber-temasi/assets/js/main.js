@@ -95,6 +95,7 @@
             });
         }
 
+
         const tickerGroups = $('[data-breaking-ticker]');
 
         tickerGroups.each(function () {
@@ -119,9 +120,19 @@
                 const safeIndex = ((index % items.length) + items.length) % items.length;
 
                 items
+=======
+        const tickerItems = $('.mobile-breaking-news__item');
+
+        if (tickerItems.length) {
+            let currentIndex = 0;
+
+            const setActiveItem = function (index) {
+                tickerItems
+
                     .removeClass('is-active')
                     .attr('aria-hidden', 'true')
                     .attr('tabindex', '-1');
+
 
                 const activeItem = items.eq(safeIndex);
 
@@ -131,9 +142,17 @@
                     .attr('tabindex', '0');
 
                 currentIndex = safeIndex;
+=======
+                tickerItems
+                    .eq(index)
+                    .addClass('is-active')
+                    .attr('aria-hidden', 'false')
+                    .attr('tabindex', '0');
+
             };
 
             setActiveItem(currentIndex);
+
 
             if (items.length > 1) {
                 setInterval(function () {
@@ -141,6 +160,15 @@
                 }, 6000);
             }
         });
+=======
+            if (tickerItems.length > 1) {
+                setInterval(function () {
+                    currentIndex = (currentIndex + 1) % tickerItems.length;
+                    setActiveItem(currentIndex);
+                }, 6000);
+            }
+        }
+
 
         const bottomNavLinks = $('.mobile-bottom-nav__link');
         if (bottomNavLinks.length) {

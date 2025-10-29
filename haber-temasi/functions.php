@@ -331,6 +331,8 @@ if ( ! function_exists( 'haber_sitesi_desktop_menu_fallback' ) ) {
     }
 }
 
+
+
 if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
     /**
      * Mobil alt menü için varsayılan bağlantılar.

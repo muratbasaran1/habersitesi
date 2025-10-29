@@ -73,10 +73,13 @@ main {
     padding-inline: clamp(1rem, 4vw, 1.5rem);
 }
 
+
 .site-header {
     position: relative;
     z-index: 60;
 }
+
+=======
 
 .mobile-header {
     position: sticky;
@@ -86,6 +89,7 @@ main {
     border-bottom: 1px solid var(--haber-border);
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 }
+
 
 .desktop-header {
     display: none;
@@ -361,6 +365,8 @@ main {
     opacity: 1;
     transform: translateY(0);
 }
+
+=======
 
 .mobile-top-meta {
     background: #fef2f2;
@@ -2376,6 +2382,7 @@ article.is-pressed {
 }
 
 @media (min-width: 1024px) {
+
     .desktop-header {
         display: block;
     }
@@ -2383,6 +2390,8 @@ article.is-pressed {
     .mobile-header {
         display: none;
     }
+
+
 
     .front-slider__shell {
         grid-template-columns: minmax(0, 2.6fr) minmax(0, 1.4fr);
