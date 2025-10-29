@@ -1,0 +1,32 @@
+/*
+Theme Name: Haber Sitesi
+Theme URI: https://example.com/haber-sitesi
+Author: OpenAI Assistant
+Author URI: https://openai.com/
+Description: Haber portalları için hazırlanmış modern, mobil öncelikli WordPress teması.
+Version: 1.0.0
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: haber-sitesi
+*/
+
+/*
+ * Bu dosya yalnızca tema meta bilgilerini ve temel geri dönüş stillerini içerir.
+ * Ön yüzün kapsamlı tasarımı assets/css/main.css dosyasından yüklenir.
+ */
+
+:root {
+    color-scheme: light;
+}
+
+body {
+    font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f3f4f6;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.is-hidden {
+    display: none !important;
+}
