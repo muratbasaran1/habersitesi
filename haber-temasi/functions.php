@@ -358,7 +358,7 @@ function haber_sitesi_enqueue_assets() {
 
     wp_localize_script(
         'haber-sitesi-navigation',
-        'haberSiteiInteract',
+        'haberSiteInteract',
         [
             'shareCopied'       => __( 'Bağlantı panoya kopyalandı.', 'haber-sitesi' ),
             'shareCopyFallback' => __( 'Bağlantı kopyalanamadı. Lütfen paylaşım bağlantısını manuel olarak açın.', 'haber-sitesi' ),

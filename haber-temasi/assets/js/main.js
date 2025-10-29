@@ -6,7 +6,7 @@
         const searchToggle = $('.mobile-header__search-toggle');
         const searchForm = $('#mobile-search');
         const searchField = $('#mobile-search-field');
-        const i18n = window.haberSiteiInteract || {};
+        const i18n = window.haberSiteInteract || {};
 
         const getMessage = function (key, fallback) {
             if (Object.prototype.hasOwnProperty.call(i18n, key) && i18n[key]) {
