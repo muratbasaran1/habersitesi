@@ -444,6 +444,106 @@ function haber_sitesi_customize_register( $wp_customize ) {
         'label'   => __( 'Koyu Arkaplan', 'haber-sitesi' ),
         'section' => 'haber_sitesi_colors',
     ] ) );
+
+    $wp_customize->add_section( 'haber_sitesi_quick_dock', [
+        'title'       => __( 'Hızlı Erişim Paneli', 'haber-sitesi' ),
+        'priority'    => 35,
+        'description' => __( 'Ekranın sağ alt köşesindeki profesyonel aksiyon panelini yönetin.', 'haber-sitesi' ),
+    ] );
+
+    $wp_customize->add_setting( 'haber_quick_dock_enable', [
+        'default'           => true,
+        'sanitize_callback' => 'haber_sitesi_sanitize_checkbox',
+    ] );
+
+    $wp_customize->add_control( 'haber_quick_dock_enable', [
+        'label'   => __( 'Hızlı erişim panelini göster', 'haber-sitesi' ),
+        'section' => 'haber_sitesi_quick_dock',
+        'type'    => 'checkbox',
+    ] );
+
+    $wp_customize->add_setting( 'haber_quick_dock_title', [
+        'default'           => __( 'Hızlı Erişim', 'haber-sitesi' ),
+        'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        'transport'         => 'refresh',
+    ] );
+
+    $wp_customize->add_control( 'haber_quick_dock_title', [
+        'label'       => __( 'Panel başlığı', 'haber-sitesi' ),
+        'section'     => 'haber_sitesi_quick_dock',
+        'type'        => 'text',
+        'description' => __( 'Panelde gösterilen üst başlığı düzenleyin.', 'haber-sitesi' ),
+    ] );
+
+    $quick_items = [
+        'contact'   => [
+            'label'       => __( 'İletişim Merkezi', 'haber-sitesi' ),
+            'description' => __( 'Okurların haber merkezine ulaşması için bağlantı.', 'haber-sitesi' ),
+            'url'         => home_url( '/iletisim/' ),
+        ],
+        'live'      => [
+            'label'       => __( 'Canlı Yayın', 'haber-sitesi' ),
+            'description' => __( 'Canlı yayın sayfanıza hızlı erişim sağlayın.', 'haber-sitesi' ),
+            'url'         => home_url( '/canli-yayin/' ),
+        ],
+        'advertise' => [
+            'label'       => __( 'Reklam & Medya', 'haber-sitesi' ),
+            'description' => __( 'Medya kiti ve iş birlikleri için bağlantı.', 'haber-sitesi' ),
+            'url'         => home_url( '/medya-kiti/' ),
+        ],
+        'tip'       => [
+            'label'       => __( 'Haber İhbarı', 'haber-sitesi' ),
+            'description' => __( 'İhbar ve özel haber formları için bağlantı.', 'haber-sitesi' ),
+            'url'         => home_url( '/haber-ihbari/' ),
+        ],
+    ];
+
+    foreach ( $quick_items as $slug => $item ) {
+        $wp_customize->add_setting( "haber_quick_dock_{$slug}_enable", [
+            'default'           => true,
+            'sanitize_callback' => 'haber_sitesi_sanitize_checkbox',
+        ] );
+
+        $wp_customize->add_control( "haber_quick_dock_{$slug}_enable", [
+            'label'   => sprintf( __( '%s aksiyonunu göster', 'haber-sitesi' ), $item['label'] ),
+            'section' => 'haber_sitesi_quick_dock',
+            'type'    => 'checkbox',
+        ] );
+
+        $wp_customize->add_setting( "haber_quick_dock_{$slug}_label", [
+            'default'           => $item['label'],
+            'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        ] );
+
+        $wp_customize->add_control( "haber_quick_dock_{$slug}_label", [
+            'label'   => sprintf( __( '%s etiketi', 'haber-sitesi' ), $item['label'] ),
+            'section' => 'haber_sitesi_quick_dock',
+            'type'    => 'text',
+        ] );
+
+        $wp_customize->add_setting( "haber_quick_dock_{$slug}_description", [
+            'default'           => $item['description'],
+            'sanitize_callback' => 'haber_sitesi_sanitize_text',
+        ] );
+
+        $wp_customize->add_control( "haber_quick_dock_{$slug}_description", [
+            'label'   => sprintf( __( '%s açıklaması', 'haber-sitesi' ), $item['label'] ),
+            'section' => 'haber_sitesi_quick_dock',
+            'type'    => 'text',
+        ] );
+
+        $wp_customize->add_setting( "haber_quick_dock_{$slug}_url", [
+            'default'           => $item['url'],
+            'sanitize_callback' => 'haber_sitesi_sanitize_url_setting',
+        ] );
+
+        $wp_customize->add_control( "haber_quick_dock_{$slug}_url", [
+            'label'       => sprintf( __( '%s bağlantısı', 'haber-sitesi' ), $item['label'] ),
+            'section'     => 'haber_sitesi_quick_dock',
+            'type'        => 'url',
+            'description' => __( 'Tam URL girin (https:// ile başlayın).', 'haber-sitesi' ),
+        ] );
+    }
 }
 add_action( 'customize_register', 'haber_sitesi_customize_register' );
 

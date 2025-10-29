@@ -351,14 +351,22 @@ add_action( 'after_setup_theme', 'haber_sitesi_setup' );
 function haber_sitesi_enqueue_assets() {
     $version = wp_get_theme()->get( 'Version' );
 
-    wp_enqueue_style( 'haber-sitesi-style', get_stylesheet_uri(), [], $version );
-    wp_enqueue_style( 'haber-sitesi-main', get_template_directory_uri() . '/assets/css/main.css', [], $version );
+    wp_register_style(
+        'haber-sitesi-main',
+        get_template_directory_uri() . '/assets/css/main.css',
+        [],
+        $version
+    );
+
+    wp_enqueue_style( 'haber-sitesi-main' );
+
+    wp_enqueue_style( 'haber-sitesi-style', get_stylesheet_uri(), [ 'haber-sitesi-main' ], $version );
 
     wp_enqueue_script( 'haber-sitesi-navigation', get_template_directory_uri() . '/assets/js/main.js', [ 'jquery' ], $version, true );
 
     wp_localize_script(
         'haber-sitesi-navigation',
-        'haberSiteiInteract',
+        'haberSitesiInteract',
         [
             'shareCopied'       => __( 'Bağlantı panoya kopyalandı.', 'haber-sitesi' ),
             'shareCopyFallback' => __( 'Bağlantı kopyalanamadı. Lütfen paylaşım bağlantısını manuel olarak açın.', 'haber-sitesi' ),
@@ -1650,3 +1658,160 @@ function haber_sitesi_flush_rewrite_on_activation() {
     flush_rewrite_rules();
 }
 add_action( 'after_switch_theme', 'haber_sitesi_flush_rewrite_on_activation' );
+
+/**
+ * Hızlı erişim panelinde gösterilecek aksiyonları döndürür.
+ *
+ * @return array<int, array<string, string>>
+ */
+function haber_sitesi_get_quick_dock_items() {
+    $defaults = [
+        'contact'   => [
+            'label'       => __( 'İletişim Merkezi', 'haber-sitesi' ),
+            'description' => __( 'Okur ilişkileri ve redaksiyon hattı.', 'haber-sitesi' ),
+            'url'         => home_url( '/iletisim/' ),
+            'icon'        => 'chat',
+        ],
+        'live'      => [
+            'label'       => __( 'Canlı Yayın', 'haber-sitesi' ),
+            'description' => __( 'Stüdyodan anlık yayın akışı.', 'haber-sitesi' ),
+            'url'         => home_url( '/canli-yayin/' ),
+            'icon'        => 'live',
+        ],
+        'advertise' => [
+            'label'       => __( 'Reklam & Medya', 'haber-sitesi' ),
+            'description' => __( 'Medya kiti ve iş birlikleri.', 'haber-sitesi' ),
+            'url'         => home_url( '/medya-kiti/' ),
+            'icon'        => 'advertise',
+        ],
+        'tip'       => [
+            'label'       => __( 'Haber İhbarı', 'haber-sitesi' ),
+            'description' => __( 'Güvenli ihbar kanalı.', 'haber-sitesi' ),
+            'url'         => home_url( '/haber-ihbari/' ),
+            'icon'        => 'tip',
+        ],
+    ];
+
+    $items = [];
+
+    foreach ( $defaults as $slug => $data ) {
+        $enabled = get_theme_mod( "haber_quick_dock_{$slug}_enable", true );
+
+        if ( ! $enabled ) {
+            continue;
+        }
+
+        $label       = get_theme_mod( "haber_quick_dock_{$slug}_label", $data['label'] );
+        $description = get_theme_mod( "haber_quick_dock_{$slug}_description", $data['description'] );
+        $url         = get_theme_mod( "haber_quick_dock_{$slug}_url", $data['url'] );
+
+        if ( empty( $url ) ) {
+            continue;
+        }
+
+        $items[] = [
+            'slug'        => $slug,
+            'label'       => $label ? $label : $data['label'],
+            'description' => $description,
+            'url'         => $url,
+            'icon'        => $data['icon'],
+        ];
+    }
+
+    return apply_filters( 'haber_sitesi_quick_dock_items', $items, $defaults );
+}
+
+/**
+ * Belirtilen ikon anahtarına göre SVG döndürür.
+ *
+ * @param string $icon Icon anahtarı.
+ *
+ * @return string
+ */
+function haber_sitesi_get_quick_dock_icon_svg( $icon ) {
+    $svg_open  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+    $svg_close = '</svg>';
+
+    switch ( $icon ) {
+        case 'live':
+            $paths = '<circle cx="12" cy="12" r="8.5"></circle><path fill="currentColor" stroke="currentColor" stroke-width="0" d="M11 8.75l4.75 3.25L11 15.25z"></path>';
+            break;
+        case 'advertise':
+            $paths = '<path d="M3.5 11.25l13-4.25v10l-13-4.25V11.25z"></path><path d="M9.5 13.5v4.25a2.25 2.25 0 004.5 0v-2.5"></path>';
+            break;
+        case 'tip':
+            $paths = '<path d="M12 3.5a6 6 0 00-6 6c0 2.1 1 3.62 2.4 4.7.56.44.85 1.15.77 1.86l-.14 1.27h6.02l-.14-1.27c-.08-.71.21-1.42.77-1.86 1.4-1.08 2.4-2.6 2.4-4.7a6 6 0 00-6-6z"></path><path d="M10 21h4"></path>';
+            break;
+        case 'chat':
+        default:
+            $paths = '<path d="M5 6.75A2.75 2.75 0 017.75 4h8.5A2.75 2.75 0 0119 6.75v5.5A2.75 2.75 0 0116.25 15h-4.5L8.5 18.5V15H7.75A2.75 2.75 0 015 12.25v-5.5z"></path><path d="M8.75 9.5h6.5"></path><path d="M8.75 12h4"></path>';
+            break;
+    }
+
+    return $svg_open . $paths . $svg_close;
+}
+
+/**
+ * Hızlı erişim panelini önyüze ekler.
+ */
+function haber_sitesi_render_quick_dock() {
+    if ( is_admin() && ! is_customize_preview() ) {
+        return;
+    }
+
+    if ( is_page_template( 'page-templates/portal-haber-yonetimi.php' ) || (int) get_query_var( 'haber_portal' ) === 1 ) {
+        return;
+    }
+
+    $enabled = get_theme_mod( 'haber_quick_dock_enable', true );
+
+    if ( ! $enabled ) {
+        return;
+    }
+
+    $items = haber_sitesi_get_quick_dock_items();
+
+    if ( empty( $items ) ) {
+        return;
+    }
+
+    $title  = get_theme_mod( 'haber_quick_dock_title', __( 'Hızlı Erişim', 'haber-sitesi' ) );
+    $panel_id = 'haber-quick-dock-panel';
+
+    ?>
+    <aside class="quick-dock" data-quick-dock>
+        <button class="quick-dock__toggle" type="button" aria-expanded="false" aria-controls="<?php echo esc_attr( $panel_id ); ?>" data-quick-dock-toggle>
+            <span class="screen-reader-text"><?php esc_html_e( 'Hızlı erişim panelini aç', 'haber-sitesi' ); ?></span>
+            <span class="quick-dock__toggle-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 12h12"></path>
+                    <path d="M12 6v12"></path>
+                </svg>
+            </span>
+        </button>
+        <div class="quick-dock__panel" id="<?php echo esc_attr( $panel_id ); ?>" data-quick-dock-panel aria-hidden="true">
+            <?php if ( $title ) : ?>
+                <span class="quick-dock__title"><?php echo esc_html( $title ); ?></span>
+            <?php endif; ?>
+            <ul class="quick-dock__list">
+                <?php foreach ( $items as $item ) : ?>
+                    <li class="quick-dock__item">
+                        <a class="quick-dock__link quick-dock__link--<?php echo esc_attr( $item['slug'] ); ?>" href="<?php echo esc_url( $item['url'] ); ?>">
+                            <span class="quick-dock__icon" aria-hidden="true">
+                                <?php echo haber_sitesi_get_quick_dock_icon_svg( $item['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            </span>
+                            <span class="quick-dock__text">
+                                <span class="quick-dock__label"><?php echo esc_html( $item['label'] ); ?></span>
+                                <?php if ( ! empty( $item['description'] ) ) : ?>
+                                    <span class="quick-dock__meta"><?php echo esc_html( $item['description'] ); ?></span>
+                                <?php endif; ?>
+                            </span>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </aside>
+    <?php
+}
+add_action( 'wp_footer', 'haber_sitesi_render_quick_dock', 15 );

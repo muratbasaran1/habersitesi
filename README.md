@@ -4,6 +4,7 @@
 
 ## Özellikler
 - Yapışkan mobil üst bilgi, yatay kaydırmalı kategori şeridi ve otomatik dönen son dakika bandı
+- `mobile-only` ve `desktop-only` yardımcı sınıflarıyla mobil/masaüstü arayüzler karışmadan çalışır; mobil alt gezinme masaüstünde otomatik gizlenir
 - Masaüstünde yardımcı menü, geniş arama çubuğu ve kırmızı son dakika şeridiyle profesyonel üst bilgi düzeni
 - Piyasa göstergeleri ve hava durumu etiketleriyle açılan üst çubuk, TV Türk tarzı manşet slider'ı ve sağda kart liste alanıyla masaüstü odaklı ana sayfa
 - Canlı yayın başlığı, program çizelgesi ve anlık istatistikleriyle senkronize çalışan "Canlı Yayın Merkezi"
@@ -11,6 +12,7 @@
 - Tercih edilen hareket ayarlarına ve sekme görünürlüğüne göre otomatik döngüyü duraklatan, odaklandığınızda yeniden başlatan akıllı manşet slider kontrolü
 - Manşetin altında video haberler ve foto galeri vitrinleri yatay kaydırma kontrolleriyle öne çıkar
 - Editör seçkisini kategori panellerine bölen 3 kolonlu ızgara, Haber Merkezi kartları ve canlı haber akışı zaman çizgisi
+- Sekmeli "Gündem Ajandası" bölümü; kategori bazlı lider haber kartı, destek liste ve otomatik döngülü tab yapısı
 - Haber Merkezi Panosu; canlı yayın metrik kartları, sürüklenebilir özel dosya vitrinleri ve podcast stüdyosu listesiyle profesyonel görünüm sunar
 - Yayıncı ekip kartları, rol rozetleri ve son içerik bağlantılarıyla "Haber Merkezi" yazar vitrini
 - Editör Masası & Yorumlar bölümüyle çok yorumlanan başlıklar için koyu arayüzlü vitrin, yan sütunda trendler/hava durumu/bülten kartları
@@ -25,6 +27,7 @@
 - Profesyonel 404 sayfası; arama formu, hızlı aksiyon düğmeleri ve trend/kategori kısayollarıyla yönlendirme
 - Tekil haber ve sayfalarda sabit üstte konumlanan okuma ilerleme çubuğu
 - Haber görüntülenme sayacı, formatlanmış istatistik bileşenleri ve okunma verisine göre sıralanan “En Çok Okunanlar” listesi
+- Sağ alt köşede açılan cam efektli "Hızlı Erişim" paneli; iletişim, canlı yayın, reklam ve ihbar bağlantılarını tek dokunuşla sunar
 - Gutenberg editöründe uyumlu tipografi ve buton stilleri
 - Muhabir, yazar ve editör rollerini yönetmeye yarayan, filtre ve metrik destekli Haber Yönetimi paneli
 - Haber Yönetimi panelinden kategori oluşturma, içerik durumlarını izleme, okunma trendlerini takip etme ve temel WordPress ayar ekranlarına hızlı erişim
@@ -44,6 +47,7 @@
 - **Görünüm > Özelleştir > Üst Bilgi** bölümünden hava durumu şehir/sıcaklık/durum metinlerini güncelleyin.
 - **Görünüm > Özelleştir > Piyasa Panosu** bölümünden piyasa değerlerini, yönlerini ve güncelleme etiketini düzenleyin.
 - **Görünüm > Özelleştir > Canlı Yayın Merkezi** bölümünden manşet sahnesinin başlık, CTA ve embed ayarlarını yapılandırın.
+- **Görünüm > Özelleştir > Hızlı Erişim Paneli** bölümünden panel başlığını, görünürlüğünü ve aksiyon bağlantılarını düzenleyin.
 - **Görünüm > Özelleştir > Anasayfa** bölümünden son dakika bandını etkinleştirip haber kaynağını belirleyin.
 - **Haber Yönetimi** sayfasında ekip üyeleri ve rollerini yönetin, filtre ve arama kontrollerini kullanın.
 - Aynı panelde yer alan kısayollarla yeni haber oluşturun, kategori ekleyin ve içerik durumlarını takip edin.
@@ -53,6 +57,8 @@
 
 ## Geliştirme
 Tema standart WordPress fonksiyonlarını kullanır ve ek bağımlılık gerektirmez. Stil ve script dosyalarını `assets` klasörü üzerinden düzenleyebilirsiniz.
+
+- `style.css` yalnızca tema meta verilerini ve temel geri dönüş stillerini içerir; asıl ön yüz stilleri `assets/css/main.css` dosyasından yüklenir.
 
 ## Çakışma Kontrolleri
 - Haber Yönetimi panelindeki **Birleştirme Kontrolü** kartı, tema dosyalarında standart birleştirme işaretlerini tarar.

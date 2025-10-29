@@ -6,7 +6,7 @@
         const searchToggle = $('.mobile-header__search-toggle');
         const searchForm = $('#mobile-search');
         const searchField = $('#mobile-search-field');
-        const i18n = window.haberSiteiInteract || {};
+        const i18n = window.haberSitesiInteract || {};
         const prefersReducedMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const getMessage = function (key, fallback) {
@@ -171,6 +171,69 @@
                 $(this).addClass('is-active');
             });
         }
+
+        const quickDockContainers = $('[data-quick-dock]');
+
+        quickDockContainers.each(function (index) {
+            const dock = $(this);
+            const toggle = dock.find('[data-quick-dock-toggle]');
+            const panel = dock.find('[data-quick-dock-panel]');
+
+            if (!toggle.length || !panel.length) {
+                return;
+            }
+
+            const namespace = '.quickDock' + index;
+            const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+            const closeDock = function (shouldFocusToggle) {
+                dock.removeClass('is-open');
+                toggle.attr('aria-expanded', 'false');
+                panel.attr('aria-hidden', 'true');
+
+                if (shouldFocusToggle) {
+                    toggle.trigger('focus');
+                }
+            };
+
+            const openDock = function () {
+                dock.addClass('is-open');
+                toggle.attr('aria-expanded', 'true');
+                panel.attr('aria-hidden', 'false');
+
+                window.requestAnimationFrame(function () {
+                    const focusable = panel.find(focusableSelector);
+
+                    if (focusable.length) {
+                        focusable.first().trigger('focus');
+                    }
+                });
+            };
+
+            toggle.on('click', function () {
+                if (dock.hasClass('is-open')) {
+                    closeDock(false);
+                } else {
+                    openDock();
+                }
+            });
+
+            dock.on('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeDock(true);
+                }
+            });
+
+            $(document).on('click' + namespace, function (event) {
+                if (!$(event.target).closest('[data-quick-dock]').length && dock.hasClass('is-open')) {
+                    closeDock(false);
+                }
+            });
+
+            $(window).on('unload' + namespace, function () {
+                $(document).off('click' + namespace);
+            });
+        });
 
         const briefingContainers = $('[data-briefing]');
 
