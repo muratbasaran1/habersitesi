@@ -1,0 +1,674 @@
+:root {
+    --portal-primary: #d92037;
+    --portal-primary-glow: 0 10px 30px rgba(217, 32, 55, 0.25);
+    --portal-surface: rgba(12, 14, 22, 0.88);
+    --portal-surface-alt: rgba(23, 27, 39, 0.78);
+    --portal-border: rgba(255, 255, 255, 0.06);
+    --portal-text: #f7f8fb;
+    --portal-muted: rgba(247, 248, 251, 0.65);
+    --portal-card-bg: rgba(255, 255, 255, 0.08);
+    --portal-card-border: rgba(255, 255, 255, 0.12);
+    --portal-gradient: linear-gradient(135deg, rgba(24, 26, 37, 0.95) 0%, rgba(41, 18, 51, 0.9) 52%, rgba(20, 24, 42, 0.96) 100%);
+    --portal-scrollbar: rgba(255, 255, 255, 0.25);
+    --portal-scrollbar-track: rgba(255, 255, 255, 0.05);
+    --portal-success: #33d69f;
+    --portal-warning: #f5a623;
+    --portal-pending: #3f8cff;
+}
+
+body.page-template-portal-haber-yonetimi #page {
+    background: var(--portal-gradient);
+    min-height: 100vh;
+}
+
+.haber-portal {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: 40px;
+    padding: 40px clamp(24px, 4vw, 72px) 56px;
+    color: var(--portal-text);
+}
+
+.haber-portal__sidebar {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 36px 32px;
+    border-radius: 28px;
+    background: var(--portal-surface);
+    border: 1px solid var(--portal-border);
+    box-shadow: 0 28px 50px rgba(5, 8, 25, 0.4);
+}
+
+.haber-portal__brand-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(217, 32, 55, 0.15);
+    color: var(--portal-text);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.haber-portal__brand-title {
+    margin: 16px 0 8px;
+    font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+    line-height: 1.2;
+}
+
+.haber-portal__brand-desc {
+    margin: 0;
+    color: var(--portal-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.haber-portal__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.haber-portal__stat-card {
+    padding: 18px;
+    border-radius: 18px;
+    background: var(--portal-card-bg);
+    border: 1px solid var(--portal-card-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.haber-portal__stat-label {
+    font-size: 0.78rem;
+    color: var(--portal-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.haber-portal__stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.haber-portal__quick-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.haber-portal__quick-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: var(--portal-card-bg);
+    border: 1px solid var(--portal-card-border);
+    color: var(--portal-text);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.haber-portal__quick-link:hover,
+.haber-portal__quick-link:focus-visible {
+    border-color: rgba(217, 32, 55, 0.65);
+    box-shadow: var(--portal-primary-glow);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.haber-portal__quick-link.is-active {
+    border-color: rgba(217, 32, 55, 0.9);
+    background: rgba(217, 32, 55, 0.28);
+    box-shadow: var(--portal-primary-glow);
+}
+
+.haber-portal__quick-link--external {
+    background: rgba(217, 32, 55, 0.18);
+    border-color: rgba(217, 32, 55, 0.35);
+    text-decoration: none;
+}
+
+.haber-portal__conflicts {
+    padding: 20px 22px;
+    border-radius: 18px;
+    background: var(--portal-card-bg);
+    border: 1px solid var(--portal-card-border);
+    display: grid;
+    gap: 12px;
+}
+
+.haber-portal__section-title {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.haber-portal__muted {
+    margin: 0;
+    color: var(--portal-muted);
+    font-size: 0.9rem;
+}
+
+.haber-portal__conflict-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    color: var(--portal-text);
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+.haber-portal__main {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    position: relative;
+}
+
+.haber-portal__notice {
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(51, 214, 159, 0.12);
+    border: 1px solid rgba(51, 214, 159, 0.45);
+    color: var(--portal-text);
+    font-weight: 600;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.haber-portal__notice-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.haber-portal__notice.is-dismissed {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+}
+
+.haber-portal__panel {
+    padding: 36px clamp(28px, 4vw, 48px);
+    border-radius: 32px;
+    background: var(--portal-surface-alt);
+    border: 1px solid var(--portal-border);
+    box-shadow: 0 24px 40px rgba(5, 8, 25, 0.35);
+    display: grid;
+    gap: 28px;
+}
+
+.haber-portal__panel--accent {
+    background: linear-gradient(140deg, rgba(217, 32, 55, 0.82), rgba(25, 26, 39, 0.92));
+    box-shadow: 0 32px 60px rgba(217, 32, 55, 0.22);
+}
+
+.haber-portal__panel--dark {
+    background: rgba(7, 11, 26, 0.85);
+}
+
+.haber-portal__panel--split {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+}
+
+.haber-portal__panel-header {
+    display: grid;
+    gap: 12px;
+}
+
+.haber-portal__panel-title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.3vw, 2rem);
+}
+
+.haber-portal__panel-subtitle {
+    margin: 0;
+    color: var(--portal-muted);
+    font-size: 0.98rem;
+}
+
+.haber-portal__panel-body {
+    display: grid;
+    gap: 28px;
+}
+
+.haber-portal__panel-body--grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.haber-portal__roles {
+    display: grid;
+    gap: 22px;
+}
+
+.haber-portal__role {
+    padding: 22px;
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: grid;
+    gap: 14px;
+}
+
+.haber-portal__role-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.haber-portal__role-title {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.haber-portal__role-count {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+    font-size: 0.85rem;
+}
+
+.haber-portal__role-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-height: 260px;
+    overflow: auto;
+}
+
+.haber-portal__role-list::-webkit-scrollbar,
+.haber-portal__main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.haber-portal__role-list::-webkit-scrollbar-thumb,
+.haber-portal__main::-webkit-scrollbar-thumb {
+    background: var(--portal-scrollbar);
+    border-radius: 999px;
+}
+
+.haber-portal__role-list::-webkit-scrollbar-track,
+.haber-portal__main::-webkit-scrollbar-track {
+    background: var(--portal-scrollbar-track);
+}
+
+.haber-portal__role-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.haber-portal__role-name {
+    font-weight: 600;
+}
+
+.haber-portal__role-meta {
+    font-size: 0.85rem;
+    color: var(--portal-muted);
+}
+
+.haber-portal__form-card {
+    padding: 26px;
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.haber-portal__form-title {
+    margin: 0 0 18px;
+    font-size: 1.05rem;
+}
+
+.haber-portal__form {
+    display: grid;
+    gap: 18px;
+}
+
+.haber-portal__form-row {
+    display: grid;
+    gap: 8px;
+}
+
+.haber-portal__form-row--split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.haber-portal__label {
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--portal-muted);
+}
+
+.haber-portal__input,
+.haber-portal__form select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--portal-text);
+}
+
+.haber-portal__input:focus,
+.haber-portal__form select:focus {
+    outline: none;
+    border-color: rgba(217, 32, 55, 0.65);
+    box-shadow: var(--portal-primary-glow);
+}
+
+.haber-portal__form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.haber-portal__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.haber-portal__button--primary {
+    background: var(--portal-primary);
+    color: #fff;
+    box-shadow: var(--portal-primary-glow);
+}
+
+.haber-portal__button--secondary {
+    background: transparent;
+    color: var(--portal-text);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.haber-portal__button:hover,
+.haber-portal__button:focus-visible {
+    transform: translateY(-1px);
+}
+
+.haber-portal__timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 18px;
+}
+
+.haber-portal__timeline-item {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.haber-portal__timeline-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--portal-primary);
+    border-radius: 50%;
+    margin-top: 6px;
+    box-shadow: 0 0 0 4px rgba(217, 32, 55, 0.25);
+}
+
+.haber-portal__timeline-link {
+    color: var(--portal-text);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.haber-portal__timeline-link:hover,
+.haber-portal__timeline-link:focus {
+    text-decoration: underline;
+}
+
+.haber-portal__timeline-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: var(--portal-muted);
+    margin-top: 6px;
+}
+
+.haber-portal__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.haber-portal__badge--publish {
+    background: rgba(51, 214, 159, 0.25);
+}
+
+.haber-portal__badge--pending {
+    background: rgba(245, 166, 35, 0.25);
+}
+
+.haber-portal__badge--draft,
+.haber-portal__badge--future {
+    background: rgba(63, 140, 255, 0.25);
+}
+
+.haber-portal__panel-side {
+    display: grid;
+    gap: 24px;
+}
+
+.haber-portal__panel-side--form {
+    padding: 24px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.haber-portal__category-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+}
+
+.haber-portal__category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.haber-portal__category-name {
+    font-weight: 600;
+}
+
+.haber-portal__category-meta {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--portal-muted);
+}
+
+.haber-portal__badge-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(217, 32, 55, 0.18);
+    color: var(--portal-text);
+    text-decoration: none;
+}
+
+.haber-portal__chart-card {
+    padding: 22px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: grid;
+    gap: 16px;
+}
+
+.haber-portal__chart-heading {
+    display: grid;
+    gap: 6px;
+}
+
+.haber-portal__chart-total {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.haber-portal__chart-meta {
+    font-size: 0.9rem;
+    color: var(--portal-muted);
+}
+
+.haber-portal__chart-peak {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--portal-muted);
+}
+
+.haber-portal__top-news-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+}
+
+.haber-portal__top-news-item {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+    align-items: center;
+}
+
+.haber-portal__top-news-rank {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    background: rgba(217, 32, 55, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.haber-portal__top-news-link {
+    color: var(--portal-text);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.haber-portal__top-news-link:hover,
+.haber-portal__top-news-link:focus {
+    text-decoration: underline;
+}
+
+.haber-portal__top-news-meta {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--portal-muted);
+}
+
+.haber-portal--guard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    min-height: calc(100vh - 120px);
+}
+
+.haber-portal__guard-card {
+    padding: 48px 52px;
+    border-radius: 28px;
+    background: rgba(9, 11, 22, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    text-align: center;
+    color: var(--portal-text);
+    display: grid;
+    gap: 16px;
+    max-width: 480px;
+}
+
+.haber-portal__guard-title {
+    margin: 0;
+    font-size: 2rem;
+}
+
+.haber-portal__guard-text {
+    margin: 0;
+    color: var(--portal-muted);
+}
+
+.haber-portal__guard-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: var(--portal-primary);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+    .haber-portal {
+        grid-template-columns: minmax(0, 1fr);
+        padding-top: 32px;
+    }
+
+    .haber-portal__sidebar {
+        position: static;
+        padding: 28px 26px;
+    }
+}
+
+@media (max-width: 768px) {
+    .haber-portal {
+        gap: 28px;
+        padding: 28px 18px 48px;
+    }
+
+    .haber-portal__panel {
+        padding: 28px 22px;
+        border-radius: 26px;
+    }
+
+    .haber-portal__form-row--split {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .haber-portal__quick-link,
+    .haber-portal__button {
+        transition: none;
+    }
+}
