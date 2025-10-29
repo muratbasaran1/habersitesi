@@ -187,6 +187,20 @@ if ( ! empty( $top_categories ) && ! is_wp_error( $top_categories ) ) {
     }
 }
 
+$briefing_bundle = haber_sitesi_get_briefing_panels(
+    [
+        'exclude'         => $excluded_ids,
+        'limit'           => 4,
+        'posts_per_panel' => 4,
+    ]
+);
+
+$briefing_panels = $briefing_bundle['panels'];
+
+if ( ! empty( $briefing_bundle['used_ids'] ) ) {
+    $excluded_ids = array_values( array_unique( array_merge( $excluded_ids, $briefing_bundle['used_ids'] ) ) );
+}
+
 $digest_query = new WP_Query(
     [
         'post_type'           => 'post',
@@ -1140,6 +1154,99 @@ $direction_labels = [
                     <p class="front-empty"><?php esc_html_e( 'Öne çıkarılacak kategori bulunamadı.', 'haber-sitesi' ); ?></p>
                 <?php endif; ?>
             </section>
+
+            <?php if ( ! empty( $briefing_panels ) ) : ?>
+                <section class="front-block front-block--briefing" id="front-ajanda" aria-label="<?php esc_attr_e( 'Gündem ajandası', 'haber-sitesi' ); ?>">
+                    <div class="front-block__header">
+                        <h2 class="front-block__title"><?php esc_html_e( 'Gündem Ajandası', 'haber-sitesi' ); ?></h2>
+                        <p class="front-block__subtitle"><?php esc_html_e( 'Canlı kategorilerde öne çıkan başlıklar', 'haber-sitesi' ); ?></p>
+                    </div>
+                    <div class="front-briefing" data-briefing>
+                        <div class="front-briefing__tabs" role="tablist" aria-label="<?php esc_attr_e( 'Ajanda kategorileri', 'haber-sitesi' ); ?>">
+                            <?php foreach ( $briefing_panels as $index => $panel ) :
+                                $term      = $panel['term'];
+                                $panel_id  = 'briefing-' . ( $panel['slug'] ? sanitize_html_class( $panel['slug'] ) : 'term-' . $term->term_id );
+                                $is_active = 0 === $index;
+                                ?>
+                                <button
+                                    type="button"
+                                    class="front-briefing__tab<?php echo $is_active ? ' is-active' : ''; ?>"
+                                    data-briefing-tab
+                                    data-briefing-target="<?php echo esc_attr( $panel_id ); ?>"
+                                    id="<?php echo esc_attr( $panel_id . '-tab' ); ?>"
+                                    role="tab"
+                                    aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+                                    aria-controls="<?php echo esc_attr( $panel_id ); ?>"
+                                >
+                                    <span class="front-briefing__tab-name"><?php echo esc_html( $term->name ); ?></span>
+                                    <span class="front-briefing__tab-count"><?php echo esc_html( number_format_i18n( count( $panel['posts'] ) ) ); ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="front-briefing__panels">
+                            <?php foreach ( $briefing_panels as $index => $panel ) :
+                                $term      = $panel['term'];
+                                $panel_id  = 'briefing-' . ( $panel['slug'] ? sanitize_html_class( $panel['slug'] ) : 'term-' . $term->term_id );
+                                $is_active = 0 === $index;
+                                $items     = $panel['posts'];
+                                $lead      = $items[0];
+                                $support   = array_slice( $items, 1 );
+                                ?>
+                                <div
+                                    class="front-briefing__panel<?php echo $is_active ? ' is-active' : ''; ?>"
+                                    id="<?php echo esc_attr( $panel_id ); ?>"
+                                    role="tabpanel"
+                                    tabindex="0"
+                                    data-briefing-panel
+                                    aria-labelledby="<?php echo esc_attr( $panel_id . '-tab' ); ?>"
+                                    <?php echo $is_active ? '' : 'hidden'; ?>
+                                >
+                                    <article class="front-briefing__lead">
+                                        <a class="front-briefing__lead-media" href="<?php echo esc_url( $lead['permalink'] ); ?>">
+                                            <?php if ( $lead['thumb'] ) : ?>
+                                                <img src="<?php echo esc_url( $lead['thumb'] ); ?>" alt="" />
+                                            <?php else : ?>
+                                                <span class="front-briefing__lead-placeholder" aria-hidden="true">🗞️</span>
+                                            <?php endif; ?>
+                                        </a>
+                                        <div class="front-briefing__lead-body">
+                                            <div class="front-briefing__lead-meta">
+                                                <span><?php echo esc_html( $lead['category'] ); ?></span>
+                                                <span>·</span>
+                                                <span><?php echo esc_html( $lead['time'] ); ?></span>
+                                            </div>
+                                            <h3 class="front-briefing__lead-title"><a href="<?php echo esc_url( $lead['permalink'] ); ?>"><?php echo esc_html( $lead['title'] ); ?></a></h3>
+                                            <p class="front-briefing__lead-excerpt"><?php echo wp_kses_post( $lead['excerpt'] ); ?></p>
+                                            <div class="front-briefing__lead-stats">
+                                                <span>👁️ <?php echo esc_html( haber_sitesi_format_count( $lead['views'] ) ); ?></span>
+                                                <span>💬 <?php echo esc_html( number_format_i18n( $lead['comments'] ) ); ?></span>
+                                                <span>⏱️ <?php echo esc_html( $lead['reading_time'] ); ?></span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                    <?php if ( ! empty( $support ) ) : ?>
+                                        <ul class="front-briefing__list" role="list">
+                                            <?php foreach ( $support as $item ) : ?>
+                                                <li class="front-briefing__item" role="listitem">
+                                                    <a class="front-briefing__item-link" href="<?php echo esc_url( $item['permalink'] ); ?>">
+                                                        <span class="front-briefing__item-title"><?php echo esc_html( $item['title'] ); ?></span>
+                                                        <span class="front-briefing__item-meta">⏱️ <?php echo esc_html( $item['reading_time'] ); ?> · 👁️ <?php echo esc_html( haber_sitesi_format_count( $item['views'] ) ); ?></span>
+                                                    </a>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php else : ?>
+                                        <p class="front-empty front-empty--briefing"><?php esc_html_e( 'Bu kategori için ek başlık bulunamadı.', 'haber-sitesi' ); ?></p>
+                                    <?php endif; ?>
+                                    <footer class="front-briefing__footer">
+                                        <a class="front-briefing__more" href="<?php echo esc_url( get_term_link( $term ) ); ?>"><?php esc_html_e( 'Kategori sayfasına git', 'haber-sitesi' ); ?></a>
+                                    </footer>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </section>
+            <?php endif; ?>
 
             <section class="front-block front-block--digest" aria-label="<?php esc_attr_e( 'Haber merkezi', 'haber-sitesi' ); ?>">
                 <div class="front-block__header">

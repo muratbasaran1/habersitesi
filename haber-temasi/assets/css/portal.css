@@ -16,6 +16,10 @@
     --portal-pending: #3f8cff;
 }
 
+body.portal-command-open {
+    overflow: hidden;
+}
+
 body.page-template-portal-haber-yonetimi #page {
     background: var(--portal-gradient);
     min-height: 100vh;
@@ -664,6 +668,173 @@ body.page-template-portal-haber-yonetimi #page {
     color: var(--portal-muted);
 }
 
+.haber-portal__command {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    z-index: 999;
+}
+
+.haber-portal__command[hidden] {
+    display: none;
+}
+
+.haber-portal__command-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(9, 11, 22, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.haber-portal__command-dialog {
+    position: relative;
+    width: min(680px, 100%);
+    max-height: min(520px, 90vh);
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 28px 28px 24px;
+    box-shadow: 0 40px 80px -40px rgba(9, 11, 22, 0.75);
+    color: var(--portal-text);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.haber-portal__command-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.haber-portal__command-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.haber-portal__command-subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--portal-muted);
+    font-size: 0.95rem;
+}
+
+.haber-portal__command-close {
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--portal-text);
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.haber-portal__command-close:hover,
+.haber-portal__command-close:focus {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.haber-portal__command-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.haber-portal__command-input {
+    flex: 1;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--portal-text);
+    padding: 0.85rem 1.2rem;
+    font-size: 1rem;
+}
+
+.haber-portal__command-input::placeholder {
+    color: rgba(248, 250, 252, 0.45);
+}
+
+.haber-portal__command-shortcut {
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+    color: rgba(248, 250, 252, 0.7);
+}
+
+.haber-portal__command-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    overflow-y: auto;
+    max-height: 260px;
+}
+
+.haber-portal__command-list li.is-hidden {
+    display: none;
+}
+
+.haber-portal__command-item {
+    width: 100%;
+    border: none;
+    border-radius: 18px;
+    padding: 0.95rem 1.15rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--portal-text);
+    text-align: left;
+    display: grid;
+    gap: 0.3rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.haber-portal__command-item:hover,
+.haber-portal__command-item:focus {
+    background: rgba(239, 68, 68, 0.18);
+    transform: translateY(-1px);
+}
+
+.haber-portal__command-item[aria-selected='true'] {
+    outline: 2px solid rgba(239, 68, 68, 0.6);
+}
+
+.haber-portal__command-item--link {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.haber-portal__command-label {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.haber-portal__command-meta {
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.6);
+}
+
+.haber-portal__command-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 1rem;
+}
+
+.haber-portal__command-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.6);
+}
+
 .haber-portal--guard {
     display: flex;
     align-items: center;
@@ -731,6 +902,15 @@ body.page-template-portal-haber-yonetimi #page {
 
     .haber-portal__form-row--split {
         grid-template-columns: 1fr;
+    }
+
+    .haber-portal__command-dialog {
+        padding: 24px 20px 20px;
+        border-radius: 22px;
+    }
+
+    .haber-portal__command-shortcut {
+        display: none;
     }
 }
 

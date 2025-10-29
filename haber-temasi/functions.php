@@ -582,6 +582,131 @@ if ( ! function_exists( 'haber_sitesi_get_category_overview' ) ) {
     }
 }
 
+if ( ! function_exists( 'haber_sitesi_get_briefing_panels' ) ) {
+    /**
+     * Gündem ajandası için kategorilere göre içerik panelleri oluşturur.
+     *
+     * @param array<string, mixed> $args Argümanlar.
+     *
+     * @return array{panels: array<int, array<string, mixed>>, used_ids: array<int, int>}
+     */
+    function haber_sitesi_get_briefing_panels( $args = [] ) {
+        $defaults = [
+            'limit'           => 4,
+            'posts_per_panel' => 4,
+            'exclude'         => [],
+        ];
+
+        $args       = wp_parse_args( $args, $defaults );
+        $limit      = max( 1, (int) $args['limit'] );
+        $per_panel  = max( 1, (int) $args['posts_per_panel'] );
+        $exclude    = array_filter( array_map( 'absint', (array) $args['exclude'] ) );
+        $used_ids   = [];
+        $panels     = [];
+        $candidates = [];
+
+        $preferred_slugs = apply_filters(
+            'haber_sitesi_briefing_preferred_slugs',
+            [ 'gundem', 'ekonomi', 'spor', 'dunya' ]
+        );
+
+        foreach ( (array) $preferred_slugs as $slug ) {
+            $slug = sanitize_title( $slug );
+
+            if ( ! $slug ) {
+                continue;
+            }
+
+            $term = get_category_by_slug( $slug );
+
+            if ( $term && ! is_wp_error( $term ) ) {
+                $candidates[ $term->term_id ] = $term;
+            }
+        }
+
+        if ( count( $candidates ) < $limit ) {
+            $fallback_terms = get_terms(
+                [
+                    'taxonomy'   => 'category',
+                    'hide_empty' => true,
+                    'orderby'    => 'count',
+                    'order'      => 'DESC',
+                    'number'     => $limit * 2,
+                    'exclude'    => array_keys( $candidates ),
+                ]
+            );
+
+            if ( ! empty( $fallback_terms ) && ! is_wp_error( $fallback_terms ) ) {
+                foreach ( $fallback_terms as $term ) {
+                    if ( count( $candidates ) >= $limit ) {
+                        break;
+                    }
+
+                    $candidates[ $term->term_id ] = $term;
+                }
+            }
+        }
+
+        if ( empty( $candidates ) ) {
+            return [
+                'panels'   => [],
+                'used_ids' => [],
+            ];
+        }
+
+        $terms = array_slice( array_values( $candidates ), 0, $limit );
+
+        foreach ( $terms as $term ) {
+            $query = new WP_Query(
+                [
+                    'post_type'           => 'post',
+                    'post_status'         => 'publish',
+                    'posts_per_page'      => $per_panel,
+                    'ignore_sticky_posts' => 1,
+                    'no_found_rows'       => true,
+                    'cat'                 => $term->term_id,
+                    'post__not_in'        => array_unique( array_merge( $exclude, $used_ids ) ),
+                ]
+            );
+
+            if ( ! $query->have_posts() ) {
+                wp_reset_postdata();
+                continue;
+            }
+
+            $items = [];
+
+            while ( $query->have_posts() ) {
+                $query->the_post();
+
+                $collected = haber_sitesi_collect_post_data( get_the_ID(), 22 );
+
+                if ( ! empty( $collected ) ) {
+                    $items[]   = $collected;
+                    $used_ids[] = $collected['id'];
+                }
+            }
+
+            wp_reset_postdata();
+
+            if ( empty( $items ) ) {
+                continue;
+            }
+
+            $panels[] = [
+                'term'  => $term,
+                'posts' => $items,
+                'slug'  => $term->slug ? sanitize_title( $term->slug ) : 'term-' . $term->term_id,
+            ];
+        }
+
+        return [
+            'panels'   => $panels,
+            'used_ids' => array_values( array_unique( $used_ids ) ),
+        ];
+    }
+}
+
 if ( ! function_exists( 'haber_sitesi_customize_market_snapshot' ) ) {
     /**
      * Özelleştirici ayarlarını piyasa panosu verilerine uygular.
@@ -1403,6 +1528,75 @@ function haber_sitesi_get_related_posts( $post_id = 0, $limit = 3 ) {
  *
  * @return array
  */
+function haber_sitesi_maybe_ensure_portal_page() {
+    if ( defined( 'WP_INSTALLING' ) && WP_INSTALLING ) {
+        return;
+    }
+
+    static $processed = false;
+
+    if ( $processed ) {
+        return;
+    }
+
+    $processed = true;
+
+    $stored_id   = (int) get_option( 'haber_sitesi_portal_page_id', 0 );
+    $stored_post = $stored_id ? get_post( $stored_id ) : null;
+    $needs_flush = false;
+    $page_id     = 0;
+
+    if ( $stored_post && 'trash' !== $stored_post->post_status ) {
+        $page_id = $stored_post->ID;
+    } else {
+        $existing = get_page_by_path( 'yonet' );
+
+        if ( $existing && 'trash' !== $existing->post_status ) {
+            $page_id = $existing->ID;
+        } else {
+            $page_id = wp_insert_post(
+                [
+                    'post_title'   => __( 'Haber Yönetim Portalı', 'haber-sitesi' ),
+                    'post_name'    => 'yonet',
+                    'post_status'  => 'publish',
+                    'post_type'    => 'page',
+                    'post_content' => __( 'Bu sayfa haber yönetim portalına ayrılmıştır.', 'haber-sitesi' ),
+                ],
+                true
+            );
+
+            if ( ! is_wp_error( $page_id ) ) {
+                $needs_flush = true;
+            }
+        }
+    }
+
+    if ( empty( $page_id ) || is_wp_error( $page_id ) ) {
+        return;
+    }
+
+    if ( 'publish' !== get_post_status( $page_id ) ) {
+        wp_update_post(
+            [
+                'ID'          => $page_id,
+                'post_status' => 'publish',
+            ]
+        );
+    }
+
+    if ( 'page-templates/portal-haber-yonetimi.php' !== get_page_template_slug( $page_id ) ) {
+        update_post_meta( $page_id, '_wp_page_template', 'page-templates/portal-haber-yonetimi.php' );
+    }
+
+    update_option( 'haber_sitesi_portal_page_id', $page_id );
+
+    if ( $needs_flush ) {
+        haber_sitesi_register_portal_rewrite();
+        flush_rewrite_rules( false );
+    }
+}
+add_action( 'after_setup_theme', 'haber_sitesi_maybe_ensure_portal_page', 20 );
+
 function haber_sitesi_register_portal_query_var( $vars ) {
     $vars[] = 'haber_portal';
 

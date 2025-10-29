@@ -32,6 +32,7 @@
 - Haber Yönetimi paneline entegre aylık yayın aktivitesi grafiği ve özet istatistikler
 - Çakışma işaretlerini tarayan ve “Taramayı Yenile” bağlantısıyla dosyaları yeniden kontrol etmenizi sağlayan yönetim paneli kartı
 - Editör ve üzeri roller için ön yüzde açılabilen, cam efektli arayüze sahip Haber Merkezi Portalı; ekip, kategori, trend ve performans kartlarını tek ekranda toplar
+- Portalda Ctrl+K (veya macOS'ta ⌘K) kısayoluyla açılan cam efektli hızlı komut paleti; arama alanı, ok tuşuyla gezinme ve tek tıkla bölümlere kaydırma
 - Portal içinden ekip üyesi/kategori ekleme, trend edit bağlantıları ve hızlı bölüm kısayolları; `/yonet/` kısa yoluyla hızla erişilebilir
 - Alt bilgi bileşen alanı ve ikincil menü desteği
 
@@ -47,8 +48,8 @@
 - **Haber Yönetimi** sayfasında ekip üyeleri ve rollerini yönetin, filtre ve arama kontrollerini kullanın.
 - Aynı panelde yer alan kısayollarla yeni haber oluşturun, kategori ekleyin ve içerik durumlarını takip edin.
 - `/yonet/` portalındaki **Canlı Yayın Merkezi** kartını kullanarak manuel canlı yayın içeriklerini ve embed kodunu hızlıca güncelleyin.
-- Yeni yönetim portalını kullanmak için bir sayfa oluşturup **Şablon > Haber Yönetim Portalı** seçin veya doğrudan `/yonet/` kısa yolunu ziyaret edin; yalnızca editör ve üzeri roller portala erişebilir.
-- `/yonet/` kısa yolu ilk açılışta çalışmıyorsa **Ayarlar > Kalıcı Bağlantılar** sayfasını ziyaret edip ayarları kaydedin; bu işlem yönlendirme kuralını yeniler.
+- Tema etkinleştirildiğinde `/yonet/` portal sayfası otomatik oluşturulur ve yalnızca editör ile üzeri roller erişebilir.
+- `/yonet/` kısa yolunda sorun yaşarsanız **Ayarlar > Kalıcı Bağlantılar** sayfasını ziyaret edip ayarları kaydetmek kuralları yenilemek için yeterlidir.
 
 ## Geliştirme
 Tema standart WordPress fonksiyonlarını kullanır ve ek bağımlılık gerektirmez. Stil ve script dosyalarını `assets` klasörü üzerinden düzenleyebilirsiniz.

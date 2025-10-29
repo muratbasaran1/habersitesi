@@ -441,6 +441,65 @@ $live_settings   = haber_sitesi_get_live_center_settings();
             </div>
         </article>
     </section>
+
+    <div class="haber-portal__command" data-portal-command hidden>
+        <div class="haber-portal__command-backdrop" data-command-dismiss></div>
+        <div class="haber-portal__command-dialog" role="dialog" aria-modal="true" aria-labelledby="haber-portal-command-title">
+            <header class="haber-portal__command-header">
+                <div>
+                    <h2 id="haber-portal-command-title" class="haber-portal__command-title"><?php esc_html_e( 'Hızlı Komutlar', 'haber-sitesi' ); ?></h2>
+                    <p class="haber-portal__command-subtitle"><?php esc_html_e( 'Portal içinde aramak için yazın veya oklarla gezin.', 'haber-sitesi' ); ?></p>
+                </div>
+                <button type="button" class="haber-portal__command-close" data-command-dismiss aria-label="<?php esc_attr_e( 'Komut paletini kapat', 'haber-sitesi' ); ?>">×</button>
+            </header>
+            <div class="haber-portal__command-search">
+                <label class="screen-reader-text" for="haber-portal-command-input"><?php esc_html_e( 'Komut ara', 'haber-sitesi' ); ?></label>
+                <input id="haber-portal-command-input" class="haber-portal__command-input" type="search" placeholder="<?php esc_attr_e( 'Ekip, içerik veya ayar ara…', 'haber-sitesi' ); ?>" autocomplete="off" spellcheck="false" />
+                <span class="haber-portal__command-shortcut" aria-hidden="true">⌘K</span>
+            </div>
+            <ul class="haber-portal__command-list" role="listbox" aria-label="<?php esc_attr_e( 'Kullanılabilir portal komutları', 'haber-sitesi' ); ?>">
+                <li>
+                    <button type="button" class="haber-portal__command-item" role="option" data-command-target="staff">
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'Ekip yönetimine git', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Yazar, editör ve muhabir listesi', 'haber-sitesi' ); ?></span>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="haber-portal__command-item" role="option" data-command-target="content">
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'İçerik akışını aç', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Güncel dosyalar ve yayın sırası', 'haber-sitesi' ); ?></span>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="haber-portal__command-item" role="option" data-command-target="live">
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'Canlı yayın merkezine git', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Yayın kartları ve stüdyo programı', 'haber-sitesi' ); ?></span>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="haber-portal__command-item" role="option" data-command-target="categories">
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'Kategori formunu aç', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Yeni kategori oluşturma ekranı', 'haber-sitesi' ); ?></span>
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="haber-portal__command-item" role="option" data-command-target="activity">
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'Performans kartlarına git', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Yayın grafiği ve trend özetleri', 'haber-sitesi' ); ?></span>
+                    </button>
+                </li>
+                <li>
+                    <a class="haber-portal__command-item haber-portal__command-item--link" role="option" href="<?php echo esc_url( admin_url() ); ?>" target="_blank" rel="noopener noreferrer" data-command-link>
+                        <span class="haber-portal__command-label"><?php esc_html_e( 'WordPress yönetimine geç', 'haber-sitesi' ); ?></span>
+                        <span class="haber-portal__command-meta"><?php esc_html_e( 'Tam panel yeni sekmede açılır', 'haber-sitesi' ); ?></span>
+                    </a>
+                </li>
+            </ul>
+            <footer class="haber-portal__command-footer">
+                <p class="haber-portal__command-hint"><?php esc_html_e( 'Komut paletini açmak için Ctrl+K ya da ⌘K kısayolunu kullanabilirsiniz.', 'haber-sitesi' ); ?></p>
+            </footer>
+        </div>
+    </div>
 </main>
 
 <?php

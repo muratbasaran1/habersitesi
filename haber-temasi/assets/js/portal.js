@@ -122,6 +122,222 @@
     renderChart();
     window.addEventListener('resize', renderChart);
 
+    const commandWrapper = document.querySelector('[data-portal-command]');
+
+    if (commandWrapper) {
+        const commandInput = commandWrapper.querySelector('#haber-portal-command-input');
+        const dismissButtons = commandWrapper.querySelectorAll('[data-command-dismiss]');
+        const commandListItems = Array.from(commandWrapper.querySelectorAll('.haber-portal__command-list li'));
+        const commandEntries = commandListItems
+            .map((listItem) => {
+                const element = listItem.querySelector('.haber-portal__command-item');
+                if (!element) {
+                    return null;
+                }
+
+                return {
+                    element,
+                    item: listItem,
+                    text: (element.textContent || '').toLowerCase(),
+                };
+            })
+            .filter(Boolean);
+
+        let commandOpen = false;
+        let activeIndex = -1;
+
+        const getVisibleEntries = () => commandEntries.filter(({ item }) => !item.classList.contains('is-hidden'));
+
+        const highlightEntry = (index, focusElement) => {
+            const visible = getVisibleEntries();
+
+            visible.forEach(({ element }) => {
+                element.setAttribute('aria-selected', 'false');
+            });
+
+            if (!visible.length) {
+                activeIndex = -1;
+                return;
+            }
+
+            const safeIndex = ((index % visible.length) + visible.length) % visible.length;
+            const activeEntry = visible[safeIndex];
+
+            activeEntry.element.setAttribute('aria-selected', 'true');
+
+            if (focusElement) {
+                activeEntry.element.focus();
+            }
+
+            activeIndex = safeIndex;
+        };
+
+        const resetPalette = () => {
+            commandEntries.forEach(({ item, element }) => {
+                item.classList.remove('is-hidden');
+                element.setAttribute('aria-selected', 'false');
+            });
+            activeIndex = -1;
+            highlightEntry(0, false);
+        };
+
+        const filterPalette = (term) => {
+            const query = term.trim().toLowerCase();
+
+            commandEntries.forEach(({ item, element, text }) => {
+                const matches = !query || text.indexOf(query) !== -1;
+                item.classList.toggle('is-hidden', !matches);
+                element.setAttribute('aria-selected', 'false');
+            });
+
+            const visible = getVisibleEntries();
+
+            if (visible.length) {
+                highlightEntry(0, false);
+            } else {
+                activeIndex = -1;
+            }
+        };
+
+        const closePalette = () => {
+            if (!commandOpen) {
+                return;
+            }
+
+            commandWrapper.setAttribute('hidden', 'hidden');
+            commandWrapper.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('portal-command-open');
+            commandOpen = false;
+            activeIndex = -1;
+        };
+
+        const triggerCommand = (element) => {
+            if (!element) {
+                return;
+            }
+
+            const target = element.getAttribute('data-command-target');
+
+            closePalette();
+
+            if (target) {
+                smoothScrollTo(target);
+                quickLinks.forEach((button) => {
+                    if (button.getAttribute('data-target') === target) {
+                        quickLinks.forEach((btn) => btn.classList.remove('is-active'));
+                        button.classList.add('is-active');
+                    }
+                });
+            }
+        };
+
+        const openPalette = () => {
+            if (commandOpen) {
+                return;
+            }
+
+            commandWrapper.removeAttribute('hidden');
+            commandWrapper.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('portal-command-open');
+            commandOpen = true;
+            resetPalette();
+
+            if (commandInput) {
+                commandInput.value = '';
+                window.requestAnimationFrame(() => {
+                    commandInput.focus();
+                });
+            }
+        };
+
+        commandEntries.forEach(({ element }) => {
+            element.addEventListener('click', (event) => {
+                if (!element.hasAttribute('data-command-link')) {
+                    event.preventDefault();
+                }
+                triggerCommand(element);
+            });
+        });
+
+        if (commandInput) {
+            commandInput.addEventListener('input', () => {
+                filterPalette(commandInput.value);
+            });
+
+            commandInput.addEventListener('keydown', (event) => {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    highlightEntry(activeIndex === -1 ? 0 : activeIndex + 1, true);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    const visible = getVisibleEntries();
+                    if (!visible.length) {
+                        return;
+                    }
+                    const nextIndex = activeIndex === -1 ? visible.length - 1 : activeIndex - 1;
+                    highlightEntry(nextIndex, true);
+                } else if (event.key === 'Enter') {
+                    const visible = getVisibleEntries();
+                    if (activeIndex >= 0 && visible[activeIndex]) {
+                        event.preventDefault();
+                        triggerCommand(visible[activeIndex].element);
+                    }
+                }
+            });
+        }
+
+        commandWrapper.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closePalette();
+            }
+        });
+
+        dismissButtons.forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                closePalette();
+            });
+        });
+
+        commandWrapper.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target instanceof Element && target.hasAttribute('data-command-dismiss')) {
+                event.preventDefault();
+                closePalette();
+            }
+        });
+
+        const platform = typeof navigator !== 'undefined' && navigator.platform ? navigator.platform : '';
+
+        document.addEventListener('keydown', (event) => {
+            const isMac = platform.toUpperCase().indexOf('MAC') >= 0;
+            const primaryKey = isMac ? event.metaKey : event.ctrlKey;
+
+            if (primaryKey && event.key && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+
+                if (commandOpen) {
+                    closePalette();
+                } else {
+                    openPalette();
+                }
+            }
+        });
+
+        commandWrapper.addEventListener('focusout', (event) => {
+            if (!commandOpen) {
+                return;
+            }
+
+            if (event.relatedTarget && commandWrapper.contains(event.relatedTarget)) {
+                return;
+            }
+
+            closePalette();
+        });
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialSection = urlParams.get('portal-section');
     if (initialSection) {

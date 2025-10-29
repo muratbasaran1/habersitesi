@@ -7,7 +7,7 @@
 ?>
     </main><!-- #primary -->
     <div id="mobile-live-region" class="screen-reader-text" aria-live="polite" aria-atomic="true"></div>
-    <nav class="mobile-bottom-nav" aria-label="<?php esc_attr_e( 'Mobil alt gezinme', 'haber-sitesi' ); ?>">
+    <nav class="mobile-bottom-nav mobile-only" aria-label="<?php esc_attr_e( 'Mobil alt gezinme', 'haber-sitesi' ); ?>">
         <div class="mobile-bottom-nav__inner">
             <?php
             wp_nav_menu(

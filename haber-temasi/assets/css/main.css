@@ -4,6 +4,14 @@
     --haber-muted: #6b7280;
 }
 
+.mobile-only {
+    display: block;
+}
+
+.desktop-only {
+    display: none;
+}
+
 .is-hidden {
     display: none !important;
 }
@@ -597,6 +605,235 @@
     color: rgba(15, 23, 42, 0.6);
 }
 
+.front-block--briefing {
+    position: relative;
+    margin: 3.5rem 0;
+    padding: 2.5rem 2rem 2.75rem;
+    border-radius: 32px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(239, 68, 68, 0.18));
+    box-shadow: 0 32px 56px -28px rgba(15, 23, 42, 0.7);
+    overflow: hidden;
+}
+
+.front-block--briefing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 12% 12%, rgba(248, 250, 252, 0.08), transparent 55%);
+    pointer-events: none;
+}
+
+.front-block--briefing .front-block__header {
+    position: relative;
+    z-index: 1;
+}
+
+.front-block--briefing .front-block__title,
+.front-block--briefing .front-block__subtitle {
+    color: #f8fafc;
+}
+
+.front-briefing {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 1.75rem;
+}
+
+.front-briefing__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.front-briefing__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.22);
+    background: rgba(15, 23, 42, 0.25);
+    color: rgba(248, 250, 252, 0.9);
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.front-briefing__tab:hover,
+.front-briefing__tab:focus {
+    border-color: rgba(239, 68, 68, 0.65);
+    background: rgba(239, 68, 68, 0.18);
+    transform: translateY(-1px);
+}
+
+.front-briefing__tab.is-active {
+    border-color: rgba(248, 250, 252, 0.9);
+    background: rgba(239, 68, 68, 0.25);
+    color: #ffffff;
+    box-shadow: 0 16px 28px rgba(239, 68, 68, 0.25);
+}
+
+.front-briefing__tab-name {
+    font-size: 0.95rem;
+}
+
+.front-briefing__tab-count {
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.front-briefing__panels {
+    position: relative;
+}
+
+.front-briefing__panel {
+    display: grid;
+    gap: 1.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+}
+
+.front-briefing__panel[hidden] {
+    display: none !important;
+}
+
+.front-briefing__lead {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 24px;
+    padding: 1.75rem;
+    display: grid;
+    gap: 1.35rem;
+    color: #f8fafc;
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.06);
+}
+
+.front-briefing__lead-media {
+    display: block;
+    border-radius: 20px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    background: rgba(15, 23, 42, 0.35);
+}
+
+.front-briefing__lead-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.front-briefing__lead-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-size: 3rem;
+    color: rgba(248, 250, 252, 0.7);
+}
+
+.front-briefing__lead-body {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.front-briefing__lead-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(248, 250, 252, 0.66);
+}
+
+.front-briefing__lead-title {
+    margin: 0;
+    font-size: 1.6rem;
+    line-height: 1.3;
+    font-weight: 800;
+}
+
+.front-briefing__lead-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.front-briefing__lead-excerpt {
+    margin: 0;
+    color: rgba(248, 250, 252, 0.72);
+    line-height: 1.65;
+    font-size: 1rem;
+}
+
+.front-briefing__lead-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.86);
+}
+
+.front-briefing__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.front-briefing__item {
+    border-radius: 20px;
+    padding: 1.1rem 1.35rem;
+    background: rgba(15, 23, 42, 0.35);
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.04);
+}
+
+.front-briefing__item-link {
+    display: grid;
+    gap: 0.35rem;
+    color: rgba(248, 250, 252, 0.92);
+    text-decoration: none;
+}
+
+.front-briefing__item-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.front-briefing__item-meta {
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.65);
+}
+
+.front-briefing__footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.front-briefing__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.4rem;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.18);
+    color: #f8fafc;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.front-empty--briefing {
+    color: rgba(248, 250, 252, 0.7);
+}
+
 .front-authors {
     margin: 3rem 0;
     display: grid;
@@ -1100,5 +1337,50 @@
 
     .front-audio__item {
         padding: 1.2rem 1.5rem;
+    }
+}
+
+@media (max-width: 960px) {
+    .front-block--briefing {
+        padding: 2.25rem 1.75rem 2.5rem;
+    }
+
+    .front-briefing__panel {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 680px) {
+    .front-block--briefing {
+        padding: 2rem 1.25rem 2.25rem;
+        border-radius: 26px;
+    }
+
+    .front-briefing__tabs {
+        gap: 0.5rem;
+    }
+
+    .front-briefing__tab {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.55rem 1rem;
+    }
+
+    .front-briefing__lead {
+        padding: 1.4rem;
+    }
+
+    .front-briefing__item {
+        padding: 1rem 1.1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .mobile-only {
+        display: none !important;
+    }
+
+    .desktop-only {
+        display: block;
     }
 }

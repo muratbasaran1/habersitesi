@@ -104,6 +104,14 @@ body.has-reading-progress .page-progress {
     padding-inline: clamp(1rem, 4vw, 1.5rem);
 }
 
+.mobile-only {
+    display: block;
+}
+
+.desktop-only {
+    display: none;
+}
+
 .site-header {
     position: relative;
     z-index: 60;
@@ -2704,6 +2712,27 @@ article.is-pressed {
 }
 
 @media (min-width: 1024px) {
+    .mobile-only {
+        display: none !important;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+
+    .mobile-shell {
+        width: min(100%, 1240px);
+        padding-inline: clamp(2rem, 5vw, 3rem);
+    }
+
+    main {
+        padding-bottom: 0;
+    }
+
+    .mobile-bottom-nav {
+        display: none;
+    }
+
     .desktop-header {
         display: block;
     }

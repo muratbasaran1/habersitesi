@@ -7,6 +7,7 @@
         const searchForm = $('#mobile-search');
         const searchField = $('#mobile-search-field');
         const i18n = window.haberSiteiInteract || {};
+        const prefersReducedMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const getMessage = function (key, fallback) {
             if (Object.prototype.hasOwnProperty.call(i18n, key) && i18n[key]) {
@@ -170,6 +171,145 @@
                 $(this).addClass('is-active');
             });
         }
+
+        const briefingContainers = $('[data-briefing]');
+
+        briefingContainers.each(function () {
+            const container = $(this);
+            const tabs = container.find('[data-briefing-tab]');
+            const panels = container.find('[data-briefing-panel]');
+
+            if (!tabs.length || !panels.length) {
+                return;
+            }
+
+            let currentIndex = tabs.index(tabs.filter('.is-active').first());
+
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            }
+
+            let rotateTimer = null;
+
+            const setActive = function (index, shouldAnnounce = true) {
+                if (!tabs.length) {
+                    return;
+                }
+
+                const safeIndex = ((index % tabs.length) + tabs.length) % tabs.length;
+
+                tabs
+                    .removeClass('is-active')
+                    .attr('aria-selected', 'false');
+
+                panels.each(function (panelIndex, panelElement) {
+                    const panel = $(panelElement);
+
+                    if (panelIndex === safeIndex) {
+                        panel.addClass('is-active').removeAttr('hidden').attr('tabindex', '0');
+                    } else {
+                        panel.removeClass('is-active').attr('hidden', 'hidden').attr('tabindex', '-1');
+                    }
+                });
+
+                const activeTab = tabs.eq(safeIndex);
+                activeTab.addClass('is-active').attr('aria-selected', 'true');
+
+                currentIndex = safeIndex;
+
+                if (shouldAnnounce) {
+                    const label = activeTab.find('.front-briefing__tab-name').text() || activeTab.text();
+                    if (label) {
+                        const template = getMessage('briefing_switched', 'Ajanda bölümü güncellendi:');
+                        announce(template + ' ' + label.trim());
+                    }
+                }
+            };
+
+            setActive(currentIndex, false);
+
+            const stopRotation = function () {
+                if (rotateTimer) {
+                    window.clearInterval(rotateTimer);
+                    rotateTimer = null;
+                }
+            };
+
+            const startRotation = function () {
+                if (prefersReducedMotionGlobal || tabs.length < 2) {
+                    return;
+                }
+
+                stopRotation();
+
+                rotateTimer = window.setInterval(function () {
+                    setActive(currentIndex + 1, false);
+                }, 9000);
+            };
+
+            tabs.on('click', function (event) {
+                event.preventDefault();
+                const index = tabs.index($(this));
+                setActive(index);
+                stopRotation();
+                window.requestAnimationFrame(startRotation);
+            });
+
+            tabs.on('keydown', function (event) {
+                let targetIndex = null;
+
+                switch (event.key) {
+                    case 'ArrowRight':
+                    case 'ArrowDown':
+                        targetIndex = currentIndex + 1;
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowUp':
+                        targetIndex = currentIndex - 1;
+                        break;
+                    case 'Home':
+                        targetIndex = 0;
+                        break;
+                    case 'End':
+                        targetIndex = tabs.length - 1;
+                        break;
+                    default:
+                        break;
+                }
+
+                if (targetIndex !== null) {
+                    event.preventDefault();
+                    setActive(targetIndex);
+                    tabs.eq(currentIndex).trigger('focus');
+                    stopRotation();
+                }
+            });
+
+            container.on('mouseenter focusin', stopRotation);
+            container.on('mouseleave focusout', function (event) {
+                if (!container.has(event.relatedTarget).length) {
+                    startRotation();
+                }
+            });
+
+            if (!prefersReducedMotionGlobal && tabs.length > 1) {
+                const handleVisibility = function () {
+                    if (document.hidden) {
+                        stopRotation();
+                    } else {
+                        startRotation();
+                    }
+                };
+
+                document.addEventListener('visibilitychange', handleVisibility);
+
+                $(window).on('unload', function () {
+                    document.removeEventListener('visibilitychange', handleVisibility);
+                });
+            }
+
+            startRotation();
+        });
 
         const sliderContainers = $('[data-front-slider]');
 

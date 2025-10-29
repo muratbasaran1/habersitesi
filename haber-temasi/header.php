@@ -48,7 +48,7 @@ if ( $show_breaking_news ) {
 }
 ?>
 <header class="site-header">
-    <div class="mobile-header">
+    <div class="mobile-header mobile-only">
         <div class="mobile-top-meta">
             <div class="mobile-shell mobile-top-meta__inner">
                 <span class="mobile-top-meta__date" aria-label="<?php esc_attr_e( 'Bugünün tarihi', 'haber-sitesi' ); ?>">📅 <?php echo esc_html( wp_date( get_option( 'date_format' ) ) ); ?></span>
@@ -129,7 +129,7 @@ if ( $show_breaking_news ) {
         <?php endif; ?>
     </div>
 
-    <div class="desktop-header">
+    <div class="desktop-header desktop-only">
         <div class="desktop-shell">
             <div class="desktop-header__top">
                 <div class="desktop-header__meta" aria-live="polite">
