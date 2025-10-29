@@ -95,6 +95,32 @@
             });
         }
 
+
+        const tickerGroups = $('[data-breaking-ticker]');
+
+        tickerGroups.each(function () {
+            const group = $(this);
+            const items = group.find('[data-breaking-item]');
+
+            if (!items.length) {
+                return;
+            }
+
+            let currentIndex = items.index(items.filter('.is-active').first());
+
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            }
+
+            const setActiveItem = function (index) {
+                if (!items.length) {
+                    return;
+                }
+
+                const safeIndex = ((index % items.length) + items.length) % items.length;
+
+                items
+=======
         const tickerItems = $('.mobile-breaking-news__item');
 
         if (tickerItems.length) {
@@ -102,19 +128,39 @@
 
             const setActiveItem = function (index) {
                 tickerItems
+
                     .removeClass('is-active')
                     .attr('aria-hidden', 'true')
                     .attr('tabindex', '-1');
 
+
+                const activeItem = items.eq(safeIndex);
+
+                activeItem
+                    .addClass('is-active')
+                    .attr('aria-hidden', 'false')
+                    .attr('tabindex', '0');
+
+                currentIndex = safeIndex;
+=======
                 tickerItems
                     .eq(index)
                     .addClass('is-active')
                     .attr('aria-hidden', 'false')
                     .attr('tabindex', '0');
+
             };
 
             setActiveItem(currentIndex);
 
+
+            if (items.length > 1) {
+                setInterval(function () {
+                    setActiveItem(currentIndex + 1);
+                }, 6000);
+            }
+        });
+=======
             if (tickerItems.length > 1) {
                 setInterval(function () {
                     currentIndex = (currentIndex + 1) % tickerItems.length;
@@ -122,6 +168,7 @@
                 }, 6000);
             }
         }
+
 
         const bottomNavLinks = $('.mobile-bottom-nav__link');
         if (bottomNavLinks.length) {

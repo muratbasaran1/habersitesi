@@ -292,6 +292,47 @@ if ( ! function_exists( 'haber_sitesi_primary_menu_fallback' ) ) {
     }
 }
 
+if ( ! function_exists( 'haber_sitesi_secondary_menu_fallback' ) ) {
+    /**
+     * Üst bağlantı menüsü için yedek liste.
+     */
+    function haber_sitesi_secondary_menu_fallback() {
+        $home_url   = home_url( '/' );
+        $login_link = wp_login_url( $home_url );
+
+        echo '<ul class="desktop-header__utility-list">';
+        echo '<li class="desktop-header__utility-item"><a href="' . esc_url( $home_url ) . '">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</a></li>';
+        echo '<li class="desktop-header__utility-item"><a href="' . esc_url( $login_link ) . '">' . esc_html__( 'Giriş', 'haber-sitesi' ) . '</a></li>';
+        echo '</ul>';
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_desktop_menu_fallback' ) ) {
+    /**
+     * Masaüstü ana menüsü için kategori tabanlı yedek gezinme çıktısı.
+     */
+    function haber_sitesi_desktop_menu_fallback() {
+        $categories = get_categories( [
+            'number'     => 10,
+            'hide_empty' => true,
+        ] );
+
+        echo '<ul class="desktop-header__menu">';
+
+        if ( empty( $categories ) ) {
+            echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Ana Sayfa', 'haber-sitesi' ) . '</a></li>';
+        } else {
+            foreach ( $categories as $category ) {
+                echo '<li><a href="' . esc_url( get_category_link( $category->term_id ) ) . '">' . esc_html( $category->name ) . '</a></li>';
+            }
+        }
+
+        echo '</ul>';
+    }
+}
+
+
+
 if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
     /**
      * Mobil alt menü için varsayılan bağlantılar.
