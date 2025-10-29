@@ -95,7 +95,6 @@
             });
         }
 
-
         const tickerGroups = $('[data-breaking-ticker]');
 
         tickerGroups.each(function () {
@@ -120,19 +119,9 @@
                 const safeIndex = ((index % items.length) + items.length) % items.length;
 
                 items
-=======
-        const tickerItems = $('.mobile-breaking-news__item');
-
-        if (tickerItems.length) {
-            let currentIndex = 0;
-
-            const setActiveItem = function (index) {
-                tickerItems
-
                     .removeClass('is-active')
                     .attr('aria-hidden', 'true')
                     .attr('tabindex', '-1');
-
 
                 const activeItem = items.eq(safeIndex);
 
@@ -142,17 +131,9 @@
                     .attr('tabindex', '0');
 
                 currentIndex = safeIndex;
-=======
-                tickerItems
-                    .eq(index)
-                    .addClass('is-active')
-                    .attr('aria-hidden', 'false')
-                    .attr('tabindex', '0');
-
             };
 
             setActiveItem(currentIndex);
-
 
             if (items.length > 1) {
                 setInterval(function () {
@@ -160,15 +141,6 @@
                 }, 6000);
             }
         });
-=======
-            if (tickerItems.length > 1) {
-                setInterval(function () {
-                    currentIndex = (currentIndex + 1) % tickerItems.length;
-                    setActiveItem(currentIndex);
-                }, 6000);
-            }
-        }
-
 
         const bottomNavLinks = $('.mobile-bottom-nav__link');
         if (bottomNavLinks.length) {
@@ -202,7 +174,13 @@
         const sliderContainers = $('[data-front-slider]');
 
         if (sliderContainers.length) {
-            const shouldAutoRotate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const motionQuery = typeof window.matchMedia === 'function'
+                ? window.matchMedia('(prefers-reduced-motion: reduce)')
+                : null;
+
+            const prefersReducedMotion = function () {
+                return motionQuery ? motionQuery.matches : false;
+            };
 
             sliderContainers.each(function () {
                 const container = $(this);
@@ -260,8 +238,20 @@
 
                 let rotationTimer = null;
 
+                const canAutoRotate = function () {
+                    if (panels.length <= 1) {
+                        return false;
+                    }
+
+                    if (document.hidden) {
+                        return false;
+                    }
+
+                    return !prefersReducedMotion();
+                };
+
                 const startAuto = function () {
-                    if (!shouldAutoRotate || panels.length <= 1) {
+                    if (!canAutoRotate()) {
                         return;
                     }
 
@@ -310,8 +300,118 @@
                 container.on('mouseenter focusin', stopAuto);
                 container.on('mouseleave focusout', startAuto);
 
+                const handleVisibilityChange = function () {
+                    if (document.hidden) {
+                        stopAuto();
+                    } else {
+                        startAuto();
+                    }
+                };
+
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+
+                if (motionQuery) {
+                    const handleMotionPreference = function () {
+                        if (prefersReducedMotion()) {
+                            stopAuto();
+                        } else {
+                            startAuto();
+                        }
+                    };
+
+                    if (typeof motionQuery.addEventListener === 'function') {
+                        motionQuery.addEventListener('change', handleMotionPreference);
+                    } else if (typeof motionQuery.addListener === 'function') {
+                        motionQuery.addListener(handleMotionPreference);
+                    }
+                }
+
                 setActive(activeIndex, false);
                 startAuto();
+            });
+        }
+
+        const spotlightGroups = $('[data-spotlight-scroll]');
+
+        if (spotlightGroups.length) {
+            spotlightGroups.each(function () {
+                const group = $(this);
+                const list = group.find('[data-spotlight-list]');
+
+                if (!list.length) {
+                    return;
+                }
+
+                const node = list.get(0);
+                const prev = group.find('[data-spotlight-prev]');
+                const next = group.find('[data-spotlight-next]');
+
+                const setDisabled = function (button, disabled) {
+                    if (!button.length) {
+                        return;
+                    }
+
+                    button.toggleClass('is-disabled', disabled);
+                    button.prop('disabled', disabled);
+                    button.attr('aria-disabled', disabled ? 'true' : 'false');
+                };
+
+                const updateState = function () {
+                    if (!node) {
+                        return;
+                    }
+
+                    const maxScroll = node.scrollWidth - node.clientWidth;
+                    const current = node.scrollLeft;
+                    const hasOverflow = maxScroll > 4;
+
+                    group.toggleClass('has-overflow', hasOverflow);
+
+                    if (!hasOverflow) {
+                        setDisabled(prev, true);
+                        setDisabled(next, true);
+                        return;
+                    }
+
+                    setDisabled(prev, current <= 4);
+                    setDisabled(next, current >= (maxScroll - 4));
+                };
+
+                const scrollByAmount = function (direction) {
+                    if (!node) {
+                        return;
+                    }
+
+                    const delta = node.clientWidth * 0.9 * direction;
+                    const maxScroll = Math.max(0, node.scrollWidth - node.clientWidth);
+                    const target = Math.max(0, Math.min(node.scrollLeft + delta, maxScroll));
+
+                    if (typeof node.scrollTo === 'function') {
+                        node.scrollTo({ left: target, behavior: 'smooth' });
+                    } else {
+                        node.scrollLeft = target;
+                    }
+
+                    window.requestAnimationFrame(updateState);
+                };
+
+                prev.on('click', function (event) {
+                    event.preventDefault();
+                    scrollByAmount(-1);
+                });
+
+                next.on('click', function (event) {
+                    event.preventDefault();
+                    scrollByAmount(1);
+                });
+
+                list.on('scroll', function () {
+                    window.requestAnimationFrame(updateState);
+                });
+
+                $(window).on('resize', updateState);
+
+                updateState();
             });
         }
 
@@ -323,6 +423,29 @@
         interactiveCards.on('mouseup mouseleave keyup', function () {
             $(this).removeClass('is-pressed');
         });
+
+        const progressBars = $('[data-progress-bar]');
+
+        if (progressBars.length) {
+            $('body').addClass('has-reading-progress');
+
+            const updateProgress = function () {
+                const scrollTop = $(window).scrollTop();
+                const docHeight = $(document).height() - $(window).height();
+                const ratio = docHeight > 0 ? Math.min(1, Math.max(0, scrollTop / docHeight)) : 0;
+                const percent = Math.round(ratio * 100);
+
+                progressBars.each(function () {
+                    this.style.setProperty('--progress-ratio', ratio);
+                    $(this)
+                        .attr('aria-valuenow', percent)
+                        .attr('aria-valuetext', percent + '%');
+                });
+            };
+
+            $(window).on('scroll.haberProgress resize.haberProgress', updateProgress);
+            updateProgress();
+        }
 
         const shareButtons = $('.js-share-button');
 

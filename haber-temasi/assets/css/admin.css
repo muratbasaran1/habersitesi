@@ -37,6 +37,21 @@ Description: Tema içi yönetim paneli stilleri.
     color: #ffffff;
 }
 
+.haber-sitesi-admin__card--analytics {
+    border-left: 4px solid #1c3d8f;
+    background: linear-gradient(135deg, #eef2ff 0%, #ffffff 55%);
+    position: relative;
+    overflow: hidden;
+}
+
+.haber-sitesi-admin__card--analytics::before {
+    content: '';
+    position: absolute;
+    inset: -120px 55% 40px -120px;
+    background: radial-gradient(110% 110% at 0% 50%, rgba(63, 95, 190, 0.16) 0%, transparent 68%);
+    pointer-events: none;
+}
+
 .haber-sitesi-admin__card--actions {
     border-left: 4px solid #cc0000;
 }
@@ -158,6 +173,272 @@ Description: Tema içi yönetim paneli stilleri.
     min-width: 190px;
     justify-content: center;
     font-weight: 600;
+}
+
+.haber-sitesi-admin__chart {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 18px;
+    align-items: end;
+}
+
+.haber-sitesi-admin__chart-column {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    color: #0f172a;
+    position: relative;
+    padding-inline: 4px;
+}
+
+.haber-sitesi-admin__chart-value {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.haber-sitesi-admin__chart-bar {
+    width: 100%;
+    height: 160px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #3f5fbe 0%, #1c3d8f 65%, #0f2b6a 100%);
+    transform-origin: center bottom;
+    transform: scaleY(0);
+    transition: transform 0.8s cubic-bezier(0.21, 0.72, 0.38, 1);
+    box-shadow: 0 18px 28px -12px rgba(63, 95, 190, 0.45);
+}
+
+[data-activity-chart].is-visible .haber-sitesi-admin__chart-bar {
+    transform: scaleY(var(--haber-admin-bar, 0.18));
+}
+
+.haber-sitesi-admin__chart-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3f4d63;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.haber-sitesi-admin__chart-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.haber-sitesi-admin__chart-stats li {
+    padding: 14px 18px;
+    background: rgba(28, 61, 143, 0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #1f2a44;
+}
+
+.haber-sitesi-admin__chart-stats span {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #4a586e;
+}
+
+.haber-sitesi-admin__chart-stats strong {
+    font-size: 18px;
+    color: #0f1c3d;
+}
+
+/* Profesyonel yönetim paneli kaplaması */
+
+.wrap.haber-sitesi-admin {
+    margin-top: 2.5rem;
+    padding: clamp(2.25rem, 3vw, 3rem);
+    border-radius: 32px;
+    background: radial-gradient(circle at top, rgba(248, 250, 252, 0.18) 0%, rgba(15, 23, 42, 0.95) 38%, rgba(9, 12, 20, 0.98) 100%);
+    box-shadow: 0 48px 96px rgba(15, 23, 42, 0.35);
+    color: #e2e8f0;
+}
+
+.wrap.haber-sitesi-admin h1 {
+    color: #ffffff;
+    font-size: 2.25rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
+}
+
+.wrap.haber-sitesi-admin .description {
+    color: rgba(226, 232, 240, 0.78);
+    font-size: 15px;
+    max-width: 720px;
+}
+
+.haber-sitesi-admin__card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 22px;
+    padding: clamp(1.6rem, 2vw + 1rem, 2.3rem);
+    margin-top: 28px;
+    box-shadow: 0 28px 56px rgba(15, 23, 42, 0.4);
+    color: #e2e8f0;
+}
+
+.haber-sitesi-admin__card h2 {
+    color: #f8fafc;
+    font-size: 1.35rem;
+}
+
+.haber-sitesi-admin__card--summary {
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.85) 0%, rgba(30, 64, 175, 0.82) 42%, rgba(15, 23, 42, 0.88) 100%);
+    border: 1px solid rgba(147, 197, 253, 0.25);
+    box-shadow: 0 32px 64px rgba(30, 64, 175, 0.45);
+}
+
+.haber-sitesi-admin__card--conflicts {
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.2) 0%, rgba(127, 29, 29, 0.65) 60%, rgba(15, 23, 42, 0.85) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fee2e2;
+}
+
+.haber-sitesi-admin__card--actions {
+    border-left: none;
+    border-top: 3px solid rgba(229, 9, 20, 0.45);
+}
+
+.haber-sitesi-admin__card--timeline {
+    border-left: none;
+    border-top: 3px solid rgba(59, 130, 246, 0.45);
+}
+
+.haber-sitesi-admin__intro {
+    color: rgba(226, 232, 240, 0.74);
+}
+
+.haber-sitesi-admin__metrics {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.haber-sitesi-admin__metrics li {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.haber-sitesi-admin__metric-label {
+    color: rgba(248, 250, 252, 0.75);
+}
+
+.haber-sitesi-admin__metric-value {
+    font-size: 30px;
+    color: #ffffff;
+}
+
+.haber-sitesi-admin__conflict-actions .button,
+.haber-sitesi-quick-actions .button {
+    border-radius: 999px;
+    padding: 0.65rem 1.6rem;
+    font-weight: 700;
+    border: none;
+    background: linear-gradient(135deg, var(--wp-admin-theme-color, #e50914) 0%, rgba(229, 9, 20, 0.85) 100%);
+    color: #ffffff;
+    box-shadow: 0 18px 32px rgba(229, 9, 20, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.haber-sitesi-admin__conflict-actions .button:hover,
+.haber-sitesi-quick-actions .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 40px rgba(229, 9, 20, 0.4);
+}
+
+.haber-sitesi-admin__conflict-list {
+    color: #fecaca;
+}
+
+.haber-sitesi-admin__table {
+    background: rgba(15, 23, 42, 0.35);
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.haber-sitesi-admin__table table {
+    color: #e2e8f0;
+}
+
+.haber-sitesi-admin__table tr:nth-child(odd) {
+    background: rgba(148, 163, 184, 0.08);
+}
+
+.haber-sitesi-admin__table th {
+    color: #f8fafc;
+}
+
+.haber-sitesi-role-filter .button {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+}
+
+.haber-sitesi-role-filter .button.is-active {
+    background: var(--wp-admin-theme-color, #e50914);
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 16px 32px rgba(229, 9, 20, 0.3);
+}
+
+.haber-sitesi-admin input[type="text"],
+.haber-sitesi-admin input[type="email"],
+.haber-sitesi-admin input[type="password"],
+.haber-sitesi-admin select {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 0.65rem 0.9rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.haber-sitesi-admin input:focus,
+.haber-sitesi-admin select:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+@media (max-width: 782px) {
+    .wrap.haber-sitesi-admin {
+        padding: 1.75rem;
+        border-radius: 24px;
+    }
+
+    .haber-sitesi-admin__card {
+        border-radius: 18px;
+    }
+
+    .haber-sitesi-admin__chart {
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+        gap: 12px;
+    }
+
+    .haber-sitesi-admin__chart-bar {
+        height: 140px;
+    }
+
+    .haber-sitesi-admin__chart-label {
+        font-size: 12px;
+    }
+
+    .haber-sitesi-admin__chart-stats {
+        grid-template-columns: 1fr;
+    }
 }
 
 .haber-sitesi-grid--equal {

@@ -9,34 +9,6 @@ global $post;
 
 get_header();
 
-$collect_post = static function ( $post_id, $excerpt_words = 24 ) {
-    $post_id = (int) $post_id;
-
-    if ( ! $post_id ) {
-        return [];
-    }
-
-    $categories     = get_the_category( $post_id );
-    $category_name  = ! empty( $categories ) ? $categories[0]->name : __( 'Güncel', 'haber-sitesi' );
-    $time_diff      = human_time_diff( get_the_time( 'U', $post_id ), current_time( 'timestamp' ) );
-    $hero_image     = get_the_post_thumbnail_url( $post_id, 'large' );
-    $thumb_image    = get_the_post_thumbnail_url( $post_id, 'medium_large' );
-
-    return [
-        'id'           => $post_id,
-        'title'        => get_the_title( $post_id ),
-        'permalink'    => get_permalink( $post_id ),
-        'excerpt'      => wp_trim_words( get_the_excerpt( $post_id ), $excerpt_words ),
-        'image'        => $hero_image,
-        'thumb'        => $thumb_image,
-        'category'     => $category_name,
-        'time'         => sprintf( __( '%s önce', 'haber-sitesi' ), $time_diff ),
-        'views'        => haber_sitesi_get_post_views( $post_id ),
-        'comments'     => get_comments_number( $post_id ),
-        'reading_time' => haber_sitesi_get_reading_time( $post_id ),
-    ];
-};
-
 $excluded_ids = [];
 
 $hero_query = new WP_Query(
@@ -54,8 +26,13 @@ $hero_items = [];
 if ( $hero_query->have_posts() ) {
     while ( $hero_query->have_posts() ) {
         $hero_query->the_post();
-        $hero_items[]   = $collect_post( get_the_ID(), 36 );
-        $excluded_ids[] = get_the_ID();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 36 );
+
+        if ( ! empty( $item ) ) {
+            $hero_items[]   = $item;
+            $excluded_ids[] = $post_id;
+        }
     }
     wp_reset_postdata();
 }
@@ -91,8 +68,13 @@ if ( ! empty( $top_categories ) && ! is_wp_error( $top_categories ) ) {
         if ( $panel_query->have_posts() ) {
             while ( $panel_query->have_posts() ) {
                 $panel_query->the_post();
-                $panel_posts[]  = $collect_post( get_the_ID(), 20 );
-                $excluded_ids[] = get_the_ID();
+                $post_id = get_the_ID();
+                $item    = haber_sitesi_collect_post_data( $post_id, 20 );
+
+                if ( ! empty( $item ) ) {
+                    $panel_posts[]  = $item;
+                    $excluded_ids[] = $post_id;
+                }
             }
             wp_reset_postdata();
         }
@@ -122,8 +104,13 @@ $digest_items = [];
 if ( $digest_query->have_posts() ) {
     while ( $digest_query->have_posts() ) {
         $digest_query->the_post();
-        $digest_items[] = $collect_post( get_the_ID(), 22 );
-        $excluded_ids[] = get_the_ID();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 22 );
+
+        if ( ! empty( $item ) ) {
+            $digest_items[] = $item;
+            $excluded_ids[] = $post_id;
+        }
     }
     wp_reset_postdata();
 }
@@ -154,8 +141,95 @@ $voices_items = [];
 if ( $voices_query->have_posts() ) {
     while ( $voices_query->have_posts() ) {
         $voices_query->the_post();
-        $voices_items[] = $collect_post( get_the_ID(), 18 );
-        $excluded_ids[] = get_the_ID();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 18 );
+
+        if ( ! empty( $item ) ) {
+            $voices_items[] = $item;
+            $excluded_ids[] = $post_id;
+        }
+    }
+    wp_reset_postdata();
+}
+
+$video_items = [];
+
+$video_query_args = [
+    'post_type'           => 'post',
+    'posts_per_page'      => 6,
+    'ignore_sticky_posts' => 1,
+    'post_status'         => 'publish',
+    'no_found_rows'       => true,
+    'post__not_in'        => $excluded_ids,
+];
+
+$video_term = get_category_by_slug( 'video' );
+
+if ( $video_term && ! is_wp_error( $video_term ) ) {
+    $video_query_args['cat'] = $video_term->term_id;
+} else {
+    $video_query_args['tax_query'] = [
+        [
+            'taxonomy' => 'post_format',
+            'field'    => 'slug',
+            'terms'    => [ 'post-format-video' ],
+        ],
+    ];
+}
+
+$video_query = new WP_Query( $video_query_args );
+
+if ( $video_query->have_posts() ) {
+    while ( $video_query->have_posts() ) {
+        $video_query->the_post();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 16 );
+
+        if ( ! empty( $item ) ) {
+            $video_items[]  = $item;
+            $excluded_ids[] = $post_id;
+        }
+    }
+    wp_reset_postdata();
+}
+
+$gallery_items = [];
+
+$gallery_query_args = [
+    'post_type'           => 'post',
+    'posts_per_page'      => 6,
+    'ignore_sticky_posts' => 1,
+    'post_status'         => 'publish',
+    'no_found_rows'       => true,
+    'post__not_in'        => $excluded_ids,
+];
+
+$gallery_term = get_category_by_slug( 'galeri' );
+
+if ( $gallery_term && ! is_wp_error( $gallery_term ) ) {
+    $gallery_query_args['cat'] = $gallery_term->term_id;
+} else {
+    $gallery_query_args['tax_query'] = [
+        [
+            'taxonomy' => 'post_format',
+            'field'    => 'slug',
+            'terms'    => [ 'post-format-gallery', 'post-format-image' ],
+        ],
+    ];
+}
+
+$gallery_query = new WP_Query( $gallery_query_args );
+
+if ( $gallery_query->have_posts() ) {
+    while ( $gallery_query->have_posts() ) {
+        $gallery_query->the_post();
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 16 );
+
+        if ( ! empty( $item ) ) {
+            $gallery_items[] = $item;
+            $excluded_ids[]  = $post_id;
+        }
     }
     wp_reset_postdata();
 }
@@ -176,7 +250,12 @@ $stream_items = [];
 if ( $stream_query->have_posts() ) {
     while ( $stream_query->have_posts() ) {
         $stream_query->the_post();
-        $stream_items[] = $collect_post( get_the_ID(), 18 );
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 18 );
+
+        if ( ! empty( $item ) ) {
+            $stream_items[] = $item;
+        }
     }
     wp_reset_postdata();
 }
@@ -199,7 +278,12 @@ $trending_items = [];
 if ( $trending_query->have_posts() ) {
     while ( $trending_query->have_posts() ) {
         $trending_query->the_post();
-        $trending_items[] = $collect_post( get_the_ID(), 12 );
+        $post_id = get_the_ID();
+        $item    = haber_sitesi_collect_post_data( $post_id, 12 );
+
+        if ( ! empty( $item ) ) {
+            $trending_items[] = $item;
+        }
     }
     wp_reset_postdata();
 }
@@ -410,6 +494,142 @@ $direction_labels = [
             <?php endif; ?>
         </div>
     </section>
+
+    <?php if ( ! empty( $video_items ) || ! empty( $gallery_items ) ) : ?>
+        <section class="front-spotlights" aria-label="<?php esc_attr_e( 'Vitrin içerikleri', 'haber-sitesi' ); ?>">
+            <div class="front-shell front-spotlights__shell">
+                <?php if ( ! empty( $video_items ) ) :
+                    $video_list_id = 'front-spotlights-video';
+                    ?>
+                    <div class="front-spotlights__block front-spotlights__block--video" data-spotlight-scroll>
+                        <header class="front-spotlights__header">
+                            <div>
+                                <h2 class="front-spotlights__title"><?php esc_html_e( 'Video Haberler', 'haber-sitesi' ); ?></h2>
+                                <p class="front-spotlights__subtitle"><?php esc_html_e( 'Canlı yayınlar ve röportajlar için hızlı vitrin', 'haber-sitesi' ); ?></p>
+                            </div>
+                            <div class="front-spotlights__controls">
+                                <button
+                                    type="button"
+                                    class="front-spotlights__nav front-spotlights__nav--prev"
+                                    data-spotlight-prev
+                                    aria-controls="<?php echo esc_attr( $video_list_id ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Önceki video', 'haber-sitesi' ); ?>"
+                                >
+                                    <span aria-hidden="true">‹</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="front-spotlights__nav front-spotlights__nav--next"
+                                    data-spotlight-next
+                                    aria-controls="<?php echo esc_attr( $video_list_id ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Sonraki video', 'haber-sitesi' ); ?>"
+                                >
+                                    <span aria-hidden="true">›</span>
+                                </button>
+                            </div>
+                        </header>
+                        <div class="front-spotlights__scroller">
+                            <div
+                                class="front-spotlights__list"
+                                id="<?php echo esc_attr( $video_list_id ); ?>"
+                                data-spotlight-list
+                                role="list"
+                            >
+                                <?php foreach ( $video_items as $item ) : ?>
+                                    <article class="front-spotlights__card" role="listitem">
+                                        <a class="front-spotlights__media" href="<?php echo esc_url( $item['permalink'] ); ?>">
+                                            <?php if ( $item['thumb'] ) : ?>
+                                                <img src="<?php echo esc_url( $item['thumb'] ); ?>" alt="" />
+                                            <?php else : ?>
+                                                <span class="front-spotlights__placeholder" aria-hidden="true">▶</span>
+                                            <?php endif; ?>
+                                        </a>
+                                        <div class="front-spotlights__body">
+                                            <div class="front-spotlights__meta">
+                                                <span><?php echo esc_html( $item['category'] ); ?></span>
+                                                <span><?php echo esc_html( $item['time'] ); ?></span>
+                                            </div>
+                                            <h3 class="front-spotlights__headline"><a href="<?php echo esc_url( $item['permalink'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a></h3>
+                                            <p class="front-spotlights__excerpt"><?php echo wp_kses_post( $item['excerpt'] ); ?></p>
+                                            <div class="front-spotlights__stats">
+                                                <span>👁️ <?php echo esc_html( haber_sitesi_format_count( $item['views'] ) ); ?></span>
+                                                <span>💬 <?php echo esc_html( number_format_i18n( $item['comments'] ) ); ?></span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $gallery_items ) ) :
+                    $gallery_list_id = 'front-spotlights-gallery';
+                    ?>
+                    <div class="front-spotlights__block front-spotlights__block--gallery" data-spotlight-scroll>
+                        <header class="front-spotlights__header">
+                            <div>
+                                <h2 class="front-spotlights__title"><?php esc_html_e( 'Foto Galeri', 'haber-sitesi' ); ?></h2>
+                                <p class="front-spotlights__subtitle"><?php esc_html_e( 'Günün kareleri ve sahadan yansımalar', 'haber-sitesi' ); ?></p>
+                            </div>
+                            <div class="front-spotlights__controls">
+                                <button
+                                    type="button"
+                                    class="front-spotlights__nav front-spotlights__nav--prev"
+                                    data-spotlight-prev
+                                    aria-controls="<?php echo esc_attr( $gallery_list_id ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Önceki galeri', 'haber-sitesi' ); ?>"
+                                >
+                                    <span aria-hidden="true">‹</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="front-spotlights__nav front-spotlights__nav--next"
+                                    data-spotlight-next
+                                    aria-controls="<?php echo esc_attr( $gallery_list_id ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Sonraki galeri', 'haber-sitesi' ); ?>"
+                                >
+                                    <span aria-hidden="true">›</span>
+                                </button>
+                            </div>
+                        </header>
+                        <div class="front-spotlights__scroller">
+                            <div
+                                class="front-spotlights__list"
+                                id="<?php echo esc_attr( $gallery_list_id ); ?>"
+                                data-spotlight-list
+                                role="list"
+                            >
+                                <?php foreach ( $gallery_items as $item ) : ?>
+                                    <article class="front-spotlights__card" role="listitem">
+                                        <a class="front-spotlights__media" href="<?php echo esc_url( $item['permalink'] ); ?>">
+                                            <?php if ( $item['thumb'] ) : ?>
+                                                <img src="<?php echo esc_url( $item['thumb'] ); ?>" alt="" />
+                                            <?php else : ?>
+                                                <span class="front-spotlights__placeholder" aria-hidden="true">🖼️</span>
+                                            <?php endif; ?>
+                                        </a>
+                                        <div class="front-spotlights__body">
+                                            <div class="front-spotlights__meta">
+                                                <span><?php echo esc_html( $item['category'] ); ?></span>
+                                                <span><?php echo esc_html( $item['time'] ); ?></span>
+                                            </div>
+                                            <h3 class="front-spotlights__headline"><a href="<?php echo esc_url( $item['permalink'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a></h3>
+                                            <p class="front-spotlights__excerpt"><?php echo wp_kses_post( $item['excerpt'] ); ?></p>
+                                            <div class="front-spotlights__stats">
+                                                <span>👁️ <?php echo esc_html( haber_sitesi_format_count( $item['views'] ) ); ?></span>
+                                                <span>💬 <?php echo esc_html( number_format_i18n( $item['comments'] ) ); ?></span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <div class="front-shell front-layout">
         <div class="front-layout__main">

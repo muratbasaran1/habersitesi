@@ -128,6 +128,57 @@
     transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Editor önizlemesi için profesyonel düzen yardımcıları */
+
+.page-teaser {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 20px;
+    padding: 1rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.page-teaser__title {
+    margin: 0;
+    font-weight: 700;
+}
+
+.page-teaser__excerpt {
+    margin: 0;
+    color: #475569;
+}
+
+.single-article__summary {
+    background: rgba(229, 9, 20, 0.08);
+    border-left: 4px solid var(--haber-primary);
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+}
+
+.single-article__summary-title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.single-article__summary-text {
+    margin: 0;
+    color: #1f2937;
+}
+
+.single-article__tags-list a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(229, 9, 20, 0.12);
+    color: var(--haber-primary);
+    text-decoration: none;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
 .single-share__link:hover,
 .single-share__link:focus {
     background: var(--haber-primary);
@@ -252,4 +303,78 @@
     padding: 0.85rem 1.6rem;
     font-weight: 700;
     cursor: pointer;
+}
+
+.front-spotlights {
+    margin: 2rem 0;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.front-spotlights__block {
+    border-radius: 24px;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.05);
+}
+
+.front-spotlights__title {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+}
+
+.front-spotlights__subtitle {
+    margin: 0;
+    color: var(--haber-muted);
+    font-size: 0.9rem;
+}
+
+.front-spotlights__list {
+    display: grid;
+    gap: 1rem;
+}
+
+.front-spotlights__card {
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.front-spotlights__media img {
+    width: 100%;
+    display: block;
+}
+
+.front-spotlights__body {
+    padding: 1rem 1.25rem 1.25rem;
+    display: grid;
+    gap: 0.65rem;
+}
+
+.front-spotlights__meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--haber-muted);
+}
+
+.front-spotlights__headline {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.front-spotlights__excerpt {
+    margin: 0;
+    color: var(--haber-muted);
+    font-size: 0.9rem;
+}
+
+.front-spotlights__stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4b5563;
 }

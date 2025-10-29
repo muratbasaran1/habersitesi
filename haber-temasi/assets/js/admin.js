@@ -132,5 +132,31 @@
         }
 
         applyFilters();
+
+        const activityChart = adminWrap.querySelector('[data-activity-chart]');
+
+        if (activityChart) {
+            const revealChart = function () {
+                activityChart.classList.add('is-visible');
+            };
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver(
+                    function (entries, obs) {
+                        entries.forEach(function (entry) {
+                            if (entry.isIntersecting) {
+                                revealChart();
+                                obs.disconnect();
+                            }
+                        });
+                    },
+                    { threshold: 0.35 }
+                );
+
+                observer.observe(activityChart);
+            } else {
+                window.setTimeout(revealChart, 240);
+            }
+        }
     });
 })();

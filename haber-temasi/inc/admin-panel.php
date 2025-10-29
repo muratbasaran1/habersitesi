@@ -84,129 +84,11 @@ function haber_sitesi_enqueue_admin_assets( $hook_suffix ) {
 add_action( 'admin_enqueue_scripts', 'haber_sitesi_enqueue_admin_assets' );
 
 /**
- * Yönetim panelindeki işlemleri yönetir.
+ * Haber yönetim paneli için veri özetini döndürür.
+ *
+ * @return array
  */
-function haber_sitesi_handle_admin_actions() {
-    if ( ! current_user_can( 'create_users' ) ) {
-        return;
-    }
-
-    if ( isset( $_POST['haber_sitesi_action'] ) && 'add_staff' === $_POST['haber_sitesi_action'] ) {
-        check_admin_referer( 'haber_sitesi_add_staff' );
-
-        $redirect_url = add_query_arg( 'page', 'haber-sitesi-staff', admin_url( 'admin.php' ) );
-
-        $first_name = sanitize_text_field( wp_unslash( $_POST['first_name'] ?? '' ) );
-        $last_name  = sanitize_text_field( wp_unslash( $_POST['last_name'] ?? '' ) );
-
-        $user_data = [
-            'user_login'   => sanitize_user( wp_unslash( $_POST['user_login'] ?? '' ) ),
-            'user_email'   => sanitize_email( wp_unslash( $_POST['user_email'] ?? '' ) ),
-            'first_name'   => $first_name,
-            'last_name'    => $last_name,
-            'display_name' => trim( $first_name . ' ' . $last_name ),
-            'user_pass'    => wp_unslash( $_POST['user_pass'] ?? '' ),
-            'role'         => sanitize_key( wp_unslash( $_POST['role'] ?? '' ) ),
-        ];
-
-        if ( empty( $user_data['display_name'] ) ) {
-            $user_data['display_name'] = $user_data['user_login'];
-        }
-
-        if ( empty( $user_data['user_login'] ) || empty( $user_data['user_email'] ) || empty( $user_data['user_pass'] ) ) {
-            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'missing_fields', $redirect_url ) );
-            exit;
-        }
-
-        if ( username_exists( $user_data['user_login'] ) || email_exists( $user_data['user_email'] ) ) {
-            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'user_exists', $redirect_url ) );
-            exit;
-        }
-
-        $allowed_roles = [ 'haber_muhabiri', 'haber_yazari', 'haber_editoru' ];
-
-        if ( ! in_array( $user_data['role'], $allowed_roles, true ) ) {
-            $user_data['role'] = 'haber_yazari';
-        }
-
-        $user_id = wp_insert_user( $user_data );
-
-        if ( is_wp_error( $user_id ) ) {
-            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'error', $redirect_url ) );
-            exit;
-        }
-
-        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'success', $redirect_url ) );
-        exit;
-    } elseif ( isset( $_POST['haber_sitesi_action'] ) && 'add_category' === $_POST['haber_sitesi_action'] ) {
-        if ( ! current_user_can( 'manage_categories' ) ) {
-            return;
-        }
-
-        check_admin_referer( 'haber_sitesi_add_category' );
-
-        $redirect_url = add_query_arg( 'page', 'haber-sitesi-staff', admin_url( 'admin.php' ) );
-
-        $category_name   = sanitize_text_field( wp_unslash( $_POST['category_name'] ?? '' ) );
-        $category_slug   = sanitize_title( wp_unslash( $_POST['category_slug'] ?? '' ) );
-        $category_parent = isset( $_POST['category_parent'] ) ? absint( $_POST['category_parent'] ) : 0;
-
-        if ( empty( $category_name ) ) {
-            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_missing_name', $redirect_url ) );
-            exit;
-        }
-
-        $args = [];
-
-        if ( ! empty( $category_slug ) ) {
-            $args['slug'] = $category_slug;
-        }
-
-        if ( $category_parent > 0 ) {
-            $args['parent'] = $category_parent;
-        }
-
-        $result = wp_insert_term( $category_name, 'category', $args );
-
-        if ( is_wp_error( $result ) ) {
-            $code = $result->get_error_code();
-            $code = $code ? sanitize_key( $code ) : 'category_error';
-
-            if ( ! in_array( $code, [ 'term_exists', 'invalid_term_name' ], true ) ) {
-                $code = 'category_error';
-            }
-
-            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', $code, $redirect_url ) );
-            exit;
-        }
-
-        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_created', $redirect_url ) );
-        exit;
-    }
-}
-
-/**
- * Yönetim sayfasını render eder.
- */
-function haber_sitesi_render_admin_page() {
-    if ( ! current_user_can( 'edit_others_posts' ) ) {
-        wp_die( esc_html__( 'Bu sayfayı görüntüleme yetkiniz yok.', 'haber-sitesi' ) );
-    }
-
-    $notice_key = isset( $_GET['haber_sitesi_notice'] ) ? sanitize_key( wp_unslash( $_GET['haber_sitesi_notice'] ) ) : '';
-
-    $notices = [
-        'success'        => [ 'class' => 'updated', 'message' => __( 'Yeni ekip üyesi başarıyla oluşturuldu.', 'haber-sitesi' ) ],
-        'user_exists'    => [ 'class' => 'error', 'message' => __( 'Kullanıcı adı veya e-posta zaten kayıtlı.', 'haber-sitesi' ) ],
-        'missing_fields' => [ 'class' => 'error', 'message' => __( 'Lütfen tüm zorunlu alanları doldurun.', 'haber-sitesi' ) ],
-        'error'          => [ 'class' => 'error', 'message' => __( 'Kullanıcı oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
-        'category_created'      => [ 'class' => 'updated', 'message' => __( 'Yeni kategori başarıyla oluşturuldu.', 'haber-sitesi' ) ],
-        'category_missing_name' => [ 'class' => 'error', 'message' => __( 'Kategori adı boş bırakılamaz.', 'haber-sitesi' ) ],
-        'term_exists'           => [ 'class' => 'error', 'message' => __( 'Bu isim veya slaş ile eşleşen bir kategori zaten var.', 'haber-sitesi' ) ],
-        'invalid_term_name'     => [ 'class' => 'error', 'message' => __( 'Kategori adı geçersiz karakterler içeriyor.', 'haber-sitesi' ) ],
-        'category_error'        => [ 'class' => 'error', 'message' => __( 'Kategori oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
-    ];
-
+function haber_sitesi_get_management_snapshot() {
     $staff_roles = [
         'haber_editoru'  => __( 'Editörler', 'haber-sitesi' ),
         'haber_yazari'   => __( 'Yazarlar', 'haber-sitesi' ),
@@ -214,6 +96,7 @@ function haber_sitesi_render_admin_page() {
     ];
 
     $staff_lists = [];
+
     foreach ( $staff_roles as $role_key => $label ) {
         $query = new WP_User_Query(
             [
@@ -222,6 +105,7 @@ function haber_sitesi_render_admin_page() {
                 'order'   => 'ASC',
             ]
         );
+
         $staff_lists[ $role_key ] = [
             'label' => $label,
             'users' => $query->get_results(),
@@ -296,6 +180,7 @@ function haber_sitesi_render_admin_page() {
             ],
         ]
     );
+
     $top_categories = get_terms(
         [
             'taxonomy'   => 'category',
@@ -314,6 +199,7 @@ function haber_sitesi_render_admin_page() {
                 'hide_empty'        => false,
                 'name'              => 'category_parent',
                 'id'                => 'haber-category-parent',
+                'class'             => 'haber-portal__input',
                 'orderby'           => 'name',
                 'hierarchical'      => true,
                 'show_option_none'  => __( 'Ana kategori yok', 'haber-sitesi' ),
@@ -325,14 +211,250 @@ function haber_sitesi_render_admin_page() {
 
     $recent_posts = get_posts(
         [
-            'post_type'      => 'post',
-            'post_status'    => [ 'publish', 'pending', 'draft', 'future' ],
-            'numberposts'    => 8,
-            'orderby'        => 'date',
-            'order'          => 'DESC',
+            'post_type'        => 'post',
+            'post_status'      => [ 'publish', 'pending', 'draft', 'future' ],
+            'numberposts'      => 8,
+            'orderby'          => 'date',
+            'order'            => 'DESC',
             'suppress_filters' => false,
         ]
     );
+
+    $activity_data   = function_exists( 'haber_sitesi_get_monthly_activity' ) ? haber_sitesi_get_monthly_activity( 6 ) : [];
+    $activity_points = $activity_data['points'] ?? [];
+
+    return [
+        'staff_roles'            => $staff_roles,
+        'staff_lists'            => $staff_lists,
+        'role_totals'            => $role_totals,
+        'total_staff'            => $total_staff,
+        'pending_posts'          => $pending_posts,
+        'draft_posts'            => $draft_posts,
+        'scheduled_posts'        => $scheduled_posts,
+        'published_today'        => $published_today,
+        'total_views'            => $total_views,
+        'top_view_posts'         => $top_view_posts,
+        'top_categories'         => $top_categories,
+        'category_parent_select' => $category_parent_select,
+        'recent_posts'           => $recent_posts,
+        'activity'               => [
+            'points'  => $activity_points,
+            'total'   => isset( $activity_data['total'] ) ? (int) $activity_data['total'] : 0,
+            'average' => isset( $activity_data['average'] ) ? (int) $activity_data['average'] : 0,
+            'peak'    => [
+                'label' => $activity_data['peak']['label'] ?? '',
+                'value' => isset( $activity_data['peak']['value'] ) ? (int) $activity_data['peak']['value'] : 0,
+            ],
+        ],
+        'conflict_files'         => function_exists( 'haber_sitesi_get_conflict_marker_files' ) ? haber_sitesi_get_conflict_marker_files() : [],
+    ];
+}
+
+/**
+ * Yönetim isteklerini işler.
+ *
+ * @param string $default_redirect Başarılı veya hatalı işlem sonrası yönlendirilecek adres.
+ */
+function haber_sitesi_process_management_request( $default_redirect ) {
+    if ( empty( $_POST['haber_sitesi_action'] ) ) {
+        return false;
+    }
+
+    $action = sanitize_key( wp_unslash( $_POST['haber_sitesi_action'] ) );
+
+    $requested_redirect = isset( $_POST['redirect_to'] ) ? wp_unslash( $_POST['redirect_to'] ) : '';
+    $redirect_url       = $requested_redirect ? wp_validate_redirect( $requested_redirect, $default_redirect ) : $default_redirect;
+
+    if ( 'add_staff' === $action ) {
+        if ( ! current_user_can( 'create_users' ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'error', $redirect_url ) );
+            exit;
+        }
+
+        check_admin_referer( 'haber_sitesi_add_staff' );
+
+        $first_name = sanitize_text_field( wp_unslash( $_POST['first_name'] ?? '' ) );
+        $last_name  = sanitize_text_field( wp_unslash( $_POST['last_name'] ?? '' ) );
+
+        $user_data = [
+            'user_login'   => sanitize_user( wp_unslash( $_POST['user_login'] ?? '' ) ),
+            'user_email'   => sanitize_email( wp_unslash( $_POST['user_email'] ?? '' ) ),
+            'first_name'   => $first_name,
+            'last_name'    => $last_name,
+            'display_name' => trim( $first_name . ' ' . $last_name ),
+            'user_pass'    => wp_unslash( $_POST['user_pass'] ?? '' ),
+            'role'         => sanitize_key( wp_unslash( $_POST['role'] ?? '' ) ),
+        ];
+
+        if ( empty( $user_data['display_name'] ) ) {
+            $user_data['display_name'] = $user_data['user_login'];
+        }
+
+        if ( empty( $user_data['user_login'] ) || empty( $user_data['user_email'] ) || empty( $user_data['user_pass'] ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'missing_fields', $redirect_url ) );
+            exit;
+        }
+
+        if ( username_exists( $user_data['user_login'] ) || email_exists( $user_data['user_email'] ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'user_exists', $redirect_url ) );
+            exit;
+        }
+
+        $allowed_roles = [ 'haber_muhabiri', 'haber_yazari', 'haber_editoru' ];
+
+        if ( ! in_array( $user_data['role'], $allowed_roles, true ) ) {
+            $user_data['role'] = 'haber_yazari';
+        }
+
+        $user_id = wp_insert_user( $user_data );
+
+        if ( is_wp_error( $user_id ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'error', $redirect_url ) );
+            exit;
+        }
+
+        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'success', $redirect_url ) );
+        exit;
+    }
+
+    if ( 'add_category' === $action ) {
+        if ( ! current_user_can( 'manage_categories' ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_error', $redirect_url ) );
+            exit;
+        }
+
+        check_admin_referer( 'haber_sitesi_add_category' );
+
+        $category_name   = sanitize_text_field( wp_unslash( $_POST['category_name'] ?? '' ) );
+        $category_slug   = sanitize_title( wp_unslash( $_POST['category_slug'] ?? '' ) );
+        $category_parent = isset( $_POST['category_parent'] ) ? absint( $_POST['category_parent'] ) : 0;
+
+        if ( empty( $category_name ) ) {
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_missing_name', $redirect_url ) );
+            exit;
+        }
+
+        $args = [];
+
+        if ( ! empty( $category_slug ) ) {
+            $args['slug'] = $category_slug;
+        }
+
+        if ( $category_parent > 0 ) {
+            $args['parent'] = $category_parent;
+        }
+
+        $result = wp_insert_term( $category_name, 'category', $args );
+
+        if ( is_wp_error( $result ) ) {
+            $code = $result->get_error_code();
+            $code = $code ? sanitize_key( $code ) : 'category_error';
+
+            if ( ! in_array( $code, [ 'term_exists', 'invalid_term_name' ], true ) ) {
+                $code = 'category_error';
+            }
+
+            wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', $code, $redirect_url ) );
+            exit;
+        }
+
+        wp_safe_redirect( add_query_arg( 'haber_sitesi_notice', 'category_created', $redirect_url ) );
+        exit;
+    }
+
+    return false;
+}
+
+/**
+ * Yönetim panelindeki işlemleri yönetir.
+ */
+function haber_sitesi_handle_admin_actions() {
+    $redirect_url = add_query_arg( 'page', 'haber-sitesi-staff', admin_url( 'admin.php' ) );
+
+    haber_sitesi_process_management_request( $redirect_url );
+}
+
+/**
+ * Ön yüzdeki yönetim portalından gelen formları işler.
+ */
+function haber_sitesi_handle_portal_actions() {
+    if ( ! is_user_logged_in() ) {
+        $login_redirect = isset( $_POST['redirect_to'] ) ? wp_unslash( $_POST['redirect_to'] ) : wp_get_referer();
+        $login_redirect = wp_validate_redirect( $login_redirect, home_url() );
+        wp_safe_redirect( wp_login_url( $login_redirect ) );
+        exit;
+    }
+
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_safe_redirect( home_url() );
+        exit;
+    }
+
+    $default_redirect = wp_get_referer();
+    $default_redirect = $default_redirect ? wp_validate_redirect( $default_redirect, home_url() ) : home_url();
+
+    haber_sitesi_process_management_request( $default_redirect );
+
+    wp_safe_redirect( $default_redirect );
+    exit;
+}
+add_action( 'admin_post_haber_sitesi_portal', 'haber_sitesi_handle_portal_actions' );
+
+/**
+ * Yetkisiz erişimler için girişe yönlendirir.
+ */
+function haber_sitesi_handle_portal_actions_nopriv() {
+    $login_redirect = isset( $_POST['redirect_to'] ) ? wp_unslash( $_POST['redirect_to'] ) : wp_get_referer();
+    $login_redirect = wp_validate_redirect( $login_redirect, home_url() );
+    wp_safe_redirect( wp_login_url( $login_redirect ) );
+    exit;
+}
+add_action( 'admin_post_nopriv_haber_sitesi_portal', 'haber_sitesi_handle_portal_actions_nopriv' );
+
+/**
+ * Yönetim sayfasını render eder.
+ */
+function haber_sitesi_render_admin_page() {
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_die( esc_html__( 'Bu sayfayı görüntüleme yetkiniz yok.', 'haber-sitesi' ) );
+    }
+
+    $notice_key = isset( $_GET['haber_sitesi_notice'] ) ? sanitize_key( wp_unslash( $_GET['haber_sitesi_notice'] ) ) : '';
+
+    $notices = [
+        'success'        => [ 'class' => 'updated', 'message' => __( 'Yeni ekip üyesi başarıyla oluşturuldu.', 'haber-sitesi' ) ],
+        'user_exists'    => [ 'class' => 'error', 'message' => __( 'Kullanıcı adı veya e-posta zaten kayıtlı.', 'haber-sitesi' ) ],
+        'missing_fields' => [ 'class' => 'error', 'message' => __( 'Lütfen tüm zorunlu alanları doldurun.', 'haber-sitesi' ) ],
+        'error'          => [ 'class' => 'error', 'message' => __( 'Kullanıcı oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
+        'category_created'      => [ 'class' => 'updated', 'message' => __( 'Yeni kategori başarıyla oluşturuldu.', 'haber-sitesi' ) ],
+        'category_missing_name' => [ 'class' => 'error', 'message' => __( 'Kategori adı boş bırakılamaz.', 'haber-sitesi' ) ],
+        'term_exists'           => [ 'class' => 'error', 'message' => __( 'Bu isim veya slaş ile eşleşen bir kategori zaten var.', 'haber-sitesi' ) ],
+        'invalid_term_name'     => [ 'class' => 'error', 'message' => __( 'Kategori adı geçersiz karakterler içeriyor.', 'haber-sitesi' ) ],
+        'category_error'        => [ 'class' => 'error', 'message' => __( 'Kategori oluşturulurken bir hata oluştu.', 'haber-sitesi' ) ],
+    ];
+
+    $snapshot = haber_sitesi_get_management_snapshot();
+
+    $staff_roles            = $snapshot['staff_roles'];
+    $staff_lists            = $snapshot['staff_lists'];
+    $role_totals            = $snapshot['role_totals'];
+    $total_staff            = $snapshot['total_staff'];
+    $pending_posts          = $snapshot['pending_posts'];
+    $draft_posts            = $snapshot['draft_posts'];
+    $scheduled_posts        = $snapshot['scheduled_posts'];
+    $published_today        = $snapshot['published_today'];
+    $total_views            = $snapshot['total_views'];
+    $top_view_posts         = $snapshot['top_view_posts'];
+    $top_categories         = $snapshot['top_categories'];
+    $category_parent_select = $snapshot['category_parent_select'];
+    $recent_posts           = $snapshot['recent_posts'];
+    $activity_data          = $snapshot['activity'];
+    $activity_points        = $activity_data['points'] ?? [];
+    $activity_total         = $activity_data['total'] ?? 0;
+    $activity_average       = $activity_data['average'] ?? 0;
+    $activity_peak_label    = $activity_data['peak']['label'] ?? '';
+    $activity_peak_value    = $activity_data['peak']['value'] ?? 0;
+    $conflict_files         = $snapshot['conflict_files'];
 
     ?>
     <div class="wrap haber-sitesi-admin">
@@ -348,7 +470,6 @@ function haber_sitesi_render_admin_page() {
         <?php endif; ?>
 
         <?php
-        $conflict_files = function_exists( 'haber_sitesi_get_conflict_marker_files' ) ? haber_sitesi_get_conflict_marker_files() : [];
         $conflict_rescan_url = wp_nonce_url(
             add_query_arg(
                 [
@@ -419,6 +540,44 @@ function haber_sitesi_render_admin_page() {
                     </span>
                 <?php endforeach; ?>
             </div>
+        </div>
+
+        <div class="haber-sitesi-admin__card haber-sitesi-admin__card--analytics">
+            <h2><?php esc_html_e( 'Yayın Aktivitesi', 'haber-sitesi' ); ?></h2>
+            <p class="haber-sitesi-admin__intro"><?php esc_html_e( 'Son altı ayda yayınlanan haber adedini takip edin ve üretim temposunu izleyin.', 'haber-sitesi' ); ?></p>
+            <?php if ( ! empty( $activity_points ) ) : ?>
+                <div class="haber-sitesi-admin__chart" data-activity-chart role="img" aria-label="<?php esc_attr_e( 'Son altı ayın yayın grafiği', 'haber-sitesi' ); ?>">
+                    <?php foreach ( $activity_points as $point ) : ?>
+                        <div
+                            class="haber-sitesi-admin__chart-column"
+                            style="--haber-admin-bar: <?php echo esc_attr( $point['ratio'] ); ?>;"
+                            title="<?php echo esc_attr( sprintf( __( '%1$s: %2$s haber', 'haber-sitesi' ), $point['label'], number_format_i18n( $point['value'] ) ) ); ?>"
+                        >
+                            <span class="haber-sitesi-admin__chart-value"><?php echo esc_html( number_format_i18n( $point['value'] ) ); ?></span>
+                            <span class="haber-sitesi-admin__chart-bar"></span>
+                            <span class="haber-sitesi-admin__chart-label"><?php echo esc_html( $point['label'] ); ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <ul class="haber-sitesi-admin__chart-stats">
+                    <li>
+                        <span><?php esc_html_e( 'Toplam Haber', 'haber-sitesi' ); ?></span>
+                        <strong><?php echo esc_html( number_format_i18n( $activity_total ) ); ?></strong>
+                    </li>
+                    <li>
+                        <span><?php esc_html_e( 'Aylık Ortalama', 'haber-sitesi' ); ?></span>
+                        <strong><?php echo esc_html( number_format_i18n( $activity_average ) ); ?></strong>
+                    </li>
+                    <?php if ( $activity_peak_value > 0 && $activity_peak_label ) : ?>
+                        <li>
+                            <span><?php esc_html_e( 'En Verimli Dönem', 'haber-sitesi' ); ?></span>
+                            <strong><?php echo esc_html( $activity_peak_label ); ?> • <?php echo esc_html( number_format_i18n( $activity_peak_value ) ); ?></strong>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            <?php else : ?>
+                <p class="haber-sitesi-admin__empty"><?php esc_html_e( 'Grafik oluşturmak için yeterli yayın bulunamadı.', 'haber-sitesi' ); ?></p>
+            <?php endif; ?>
         </div>
 
         <div class="haber-sitesi-admin__card haber-sitesi-admin__card--actions">

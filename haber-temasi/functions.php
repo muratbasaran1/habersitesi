@@ -74,6 +74,37 @@ function haber_sitesi_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_assets' );
 
 /**
+ * Yönetim portalı için özel varlıkları yükler.
+ */
+function haber_sitesi_enqueue_portal_assets() {
+    if ( ! is_page_template( 'page-templates/portal-haber-yonetimi.php' ) ) {
+        return;
+    }
+
+    if ( ! is_user_logged_in() || ! current_user_can( 'edit_others_posts' ) ) {
+        return;
+    }
+
+    $version = wp_get_theme()->get( 'Version' );
+
+    wp_enqueue_style(
+        'haber-sitesi-portal',
+        get_template_directory_uri() . '/assets/css/portal.css',
+        [],
+        $version
+    );
+
+    wp_enqueue_script(
+        'haber-sitesi-portal',
+        get_template_directory_uri() . '/assets/js/portal.js',
+        [],
+        $version,
+        true
+    );
+}
+add_action( 'wp_enqueue_scripts', 'haber_sitesi_enqueue_portal_assets' );
+
+/**
  * Widget alanlarını kaydeder.
  */
 function haber_sitesi_widgets_init() {
@@ -98,6 +129,242 @@ function haber_sitesi_widgets_init() {
     ] );
 }
 add_action( 'widgets_init', 'haber_sitesi_widgets_init' );
+
+if ( ! function_exists( 'haber_sitesi_collect_post_data' ) ) {
+    /**
+     * Haber kartlarında kullanılmak üzere standartlaştırılmış içerik verisi döndürür.
+     *
+     * @param int $post_id        Yazı kimliği.
+     * @param int $excerpt_words  Özet için kelime sınırı.
+     *
+     * @return array<string, mixed>
+     */
+    function haber_sitesi_collect_post_data( $post_id, $excerpt_words = 24 ) {
+        $post_id = absint( $post_id );
+
+        if ( ! $post_id ) {
+            return [];
+        }
+
+        $categories    = get_the_category( $post_id );
+        $category_name = ! empty( $categories ) ? $categories[0]->name : __( 'Güncel', 'haber-sitesi' );
+        $time_diff     = human_time_diff( get_the_time( 'U', $post_id ), current_time( 'timestamp' ) );
+        $author_id     = (int) get_post_field( 'post_author', $post_id );
+
+        return [
+            'id'           => $post_id,
+            'title'        => get_the_title( $post_id ),
+            'permalink'    => get_permalink( $post_id ),
+            'excerpt'      => wp_trim_words( get_the_excerpt( $post_id ), $excerpt_words ),
+            'image'        => get_the_post_thumbnail_url( $post_id, 'full' ),
+            'thumb'        => get_the_post_thumbnail_url( $post_id, 'medium_large' ),
+            'category'     => $category_name,
+            'time'         => sprintf( __( '%s önce', 'haber-sitesi' ), $time_diff ),
+            'views'        => haber_sitesi_get_post_views( $post_id ),
+            'comments'     => get_comments_number( $post_id ),
+            'reading_time' => haber_sitesi_get_reading_time( $post_id ),
+            'author'       => $author_id ? get_the_author_meta( 'display_name', $author_id ) : '',
+            'date'         => get_the_date( '', $post_id ),
+        ];
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_get_trending_posts' ) ) {
+    /**
+     * Görüntülenme sayılarına göre trend olan haberleri döndürür.
+     *
+     * @param int   $limit        Listelenecek içerik sayısı.
+     * @param array $exclude_ids  Hariç tutulacak yazı kimlikleri.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function haber_sitesi_get_trending_posts( $limit = 5, $exclude_ids = [] ) {
+        $limit       = max( 1, (int) $limit );
+        $exclude_ids = array_filter( array_map( 'absint', (array) $exclude_ids ) );
+
+        $query_args = [
+            'post_type'           => 'post',
+            'post_status'         => 'publish',
+            'posts_per_page'      => $limit,
+            'ignore_sticky_posts' => 1,
+            'meta_key'            => 'haber_view_count',
+            'orderby'             => 'meta_value_num',
+            'order'               => 'DESC',
+            'post__not_in'        => $exclude_ids,
+            'no_found_rows'       => true,
+        ];
+
+        $query  = new WP_Query( $query_args );
+        $items  = [];
+
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                $items[] = haber_sitesi_collect_post_data( get_the_ID(), 18 );
+            }
+            wp_reset_postdata();
+        }
+
+        if ( empty( $items ) ) {
+            $fallback_args = [
+                'post_type'           => 'post',
+                'post_status'         => 'publish',
+                'posts_per_page'      => $limit,
+                'ignore_sticky_posts' => 1,
+                'orderby'             => 'comment_count',
+                'order'               => 'DESC',
+                'post__not_in'        => $exclude_ids,
+                'no_found_rows'       => true,
+            ];
+
+            $fallback_query = new WP_Query( $fallback_args );
+
+            if ( $fallback_query->have_posts() ) {
+                while ( $fallback_query->have_posts() ) {
+                    $fallback_query->the_post();
+                    $items[] = haber_sitesi_collect_post_data( get_the_ID(), 18 );
+                }
+                wp_reset_postdata();
+            }
+        }
+
+        return $items;
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_get_category_overview' ) ) {
+    /**
+     * Kategori istatistiklerini özetler.
+     *
+     * @param int $limit Kaç kategori döneceği.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function haber_sitesi_get_category_overview( $limit = 6 ) {
+        $terms = get_terms(
+            [
+                'taxonomy'   => 'category',
+                'hide_empty' => false,
+                'orderby'    => 'count',
+                'order'      => 'DESC',
+                'number'     => max( 1, (int) $limit ),
+            ]
+        );
+
+        if ( empty( $terms ) || is_wp_error( $terms ) ) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ( $terms as $term ) {
+            $items[] = [
+                'id'    => $term->term_id,
+                'name'  => $term->name,
+                'count' => (int) $term->count,
+                'link'  => get_term_link( $term ),
+            ];
+        }
+
+        return $items;
+    }
+}
+
+if ( ! function_exists( 'haber_sitesi_get_monthly_activity' ) ) {
+    /**
+     * Haber yayın aktivitesini aylık olarak özetler.
+     *
+     * @param int $months Geriye dönük kaç ayın hesaba katılacağı.
+     *
+     * @return array<string, mixed>
+     */
+    function haber_sitesi_get_monthly_activity( $months = 6 ) {
+        global $wpdb;
+
+        $months = max( 1, (int) $months );
+
+        $current_gmt = current_time( 'timestamp', true );
+        $start_point = strtotime( sprintf( '-%d months', $months - 1 ), $current_gmt );
+
+        if ( false === $start_point ) {
+            $start_point = $current_gmt;
+        }
+
+        $start_date = gmdate( 'Y-m-01 00:00:00', $start_point );
+
+        $query = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT DATE_FORMAT(post_date_gmt, '%%Y-%%m') AS period, COUNT(ID) AS total FROM {$wpdb->posts} WHERE post_type = %s AND post_status NOT IN ('auto-draft','trash') AND post_date_gmt >= %s GROUP BY period ORDER BY period ASC",
+                'post',
+                $start_date
+            ),
+            ARRAY_A
+        );
+
+        $timeline = [];
+
+        for ( $offset = $months - 1; $offset >= 0; $offset-- ) {
+            $period_key             = gmdate( 'Y-m', strtotime( sprintf( '-%d months', $offset ), $current_gmt ) );
+            $timeline[ $period_key ] = 0;
+        }
+
+        if ( ! empty( $query ) ) {
+            foreach ( $query as $row ) {
+                $period = $row['period'];
+                $total  = isset( $row['total'] ) ? (int) $row['total'] : 0;
+
+                if ( isset( $timeline[ $period ] ) ) {
+                    $timeline[ $period ] = $total;
+                }
+            }
+        }
+
+        $max_value      = ! empty( $timeline ) ? max( $timeline ) : 0;
+        $total_activity = array_sum( $timeline );
+        $points         = [];
+
+        foreach ( $timeline as $period => $value ) {
+            $timestamp = strtotime( $period . '-01 00:00:00' );
+            $label     = $timestamp ? wp_date( _x( 'M \’y', 'Admin activity chart month label', 'haber-sitesi' ), $timestamp ) : $period;
+            $ratio     = $max_value > 0 ? $value / $max_value : 0;
+            $ratio     = max( 0, min( 1, $ratio ) );
+            $points[]  = [
+                'period' => $period,
+                'label'  => $label,
+                'value'  => $value,
+                'ratio'  => $max_value > 0 ? max( 0.12, min( 1, $ratio ) ) : 0,
+            ];
+        }
+
+        $average = ! empty( $timeline ) ? (int) round( $total_activity / count( $timeline ) ) : 0;
+
+        $peak_period = '';
+        if ( $max_value > 0 ) {
+            foreach ( $timeline as $period => $value ) {
+                if ( $value === $max_value ) {
+                    $peak_period = $period;
+                    break;
+                }
+            }
+        }
+
+        $peak_label = '';
+        if ( $peak_period ) {
+            $peak_timestamp = strtotime( $peak_period . '-01 00:00:00' );
+            $peak_label     = $peak_timestamp ? wp_date( _x( 'F Y', 'Admin activity chart peak month label', 'haber-sitesi' ), $peak_timestamp ) : $peak_period;
+        }
+
+        return [
+            'points' => $points,
+            'total'  => $total_activity,
+            'average'=> $average,
+            'peak'   => [
+                'label' => $peak_label,
+                'value' => $max_value,
+            ],
+        ];
+    }
+}
 
 /**
  * Tarama sonucunu geçici olarak saklayan anahtar.
@@ -263,6 +530,148 @@ function haber_sitesi_conflict_marker_notice() {
 }
 add_action( 'admin_notices', 'haber_sitesi_conflict_marker_notice' );
 
+/**
+ * Birleştirme işareti bloklarını temizleyerek önceki veya sonraki sürümü seçer.
+ *
+ * @param string $content Temizlenecek içerik.
+ *
+ * @return string
+ */
+function haber_sitesi_strip_conflict_markers_from_string( $content ) {
+    if ( ! is_string( $content ) || '' === $content ) {
+        return $content;
+    }
+
+    if ( false === strpos( $content, '<<<<<<<' ) ) {
+        return $content;
+    }
+
+    $content = preg_replace_callback(
+        '/<<<<<<<[^\r\n]*\r?\n([\s\S]*?)\r?\n=======\r?\n([\s\S]*?)\r?\n>>>>>>>[^\r\n]*(?:\r?\n|$)/',
+        function ( $matches ) {
+            $current   = $matches[1];
+            $incoming  = $matches[2];
+            $score_one = strlen( preg_replace( '/\s+/u', '', $current ) );
+            $score_two = strlen( preg_replace( '/\s+/u', '', $incoming ) );
+
+            return $score_one >= $score_two ? $current : $incoming;
+        },
+        $content
+    );
+
+    $content = preg_replace( '/<<<<<<<[^\r\n]*(?:\r?\n|$)/', '', $content );
+    $content = preg_replace( '/=======(?:\r?\n|$)/', '', $content );
+    $content = preg_replace( '/>>>>>>>[^\r\n]*(?:\r?\n|$)/', '', $content );
+
+    return $content;
+}
+
+/**
+ * Diziler için birleştirme işaretlerini derinlemesine temizler.
+ *
+ * @param mixed $value Filtrelenecek değer.
+ *
+ * @return mixed
+ */
+function haber_sitesi_strip_conflict_markers_deep( $value ) {
+    if ( is_string( $value ) ) {
+        return haber_sitesi_strip_conflict_markers_from_string( $value );
+    }
+
+    if ( is_array( $value ) ) {
+        foreach ( $value as $key => $item ) {
+            $value[ $key ] = haber_sitesi_strip_conflict_markers_deep( $item );
+        }
+    }
+
+    return $value;
+}
+
+/**
+ * Birleştirme işaretlerini seçenek güncellemelerinde temizler.
+ *
+ * @param mixed  $value     Yeni değer.
+ * @param mixed  $old_value Eski değer.
+ * @param string $option    Seçenek adı.
+ *
+ * @return mixed
+ */
+function haber_sitesi_pre_update_option_conflict_markers( $value, $old_value = null, $option = '' ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    unset( $old_value, $option );
+
+    return haber_sitesi_strip_conflict_markers_deep( $value );
+}
+
+/**
+ * Yorum kaydedilirken birleştirme işaretlerini temizler.
+ *
+ * @param array $comment_data Yorum verileri.
+ *
+ * @return array
+ */
+function haber_sitesi_preprocess_comment_conflicts( $comment_data ) {
+    return haber_sitesi_strip_conflict_markers_deep( $comment_data );
+}
+
+/**
+ * İçerik filtrelerinde çakışma işaretlerini temizler.
+ *
+ * @param string $value Filtrelenecek değer.
+ *
+ * @return string
+ */
+function haber_sitesi_filter_conflict_markers( $value ) {
+    return haber_sitesi_strip_conflict_markers_from_string( $value );
+}
+
+add_filter( 'the_content', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'get_the_excerpt', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'the_title', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'nav_menu_item_title', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'widget_text_content', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'comment_text', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'title_save_pre', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'content_save_pre', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'excerpt_save_pre', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_term_name', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_term_slug', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_term_description', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_user_display_name', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_user_description', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_user_first_name', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_user_last_name', 'haber_sitesi_filter_conflict_markers', 0 );
+add_filter( 'pre_user_nickname', 'haber_sitesi_filter_conflict_markers', 0 );
+
+add_filter( 'pre_update_option_blogname', 'haber_sitesi_pre_update_option_conflict_markers', 0, 3 );
+add_filter( 'pre_update_option_blogdescription', 'haber_sitesi_pre_update_option_conflict_markers', 0, 3 );
+add_filter( 'preprocess_comment', 'haber_sitesi_preprocess_comment_conflicts', 0 );
+
+add_filter(
+    'document_title_parts',
+    function ( $parts ) {
+        foreach ( $parts as $key => $value ) {
+            if ( is_string( $value ) ) {
+                $parts[ $key ] = haber_sitesi_strip_conflict_markers_from_string( $value );
+            }
+        }
+
+        return $parts;
+    },
+    0
+);
+
+/**
+ * Ön yüzde tamponlama yaparak olası birleştirme işaretlerini temizler.
+ */
+function haber_sitesi_buffer_conflict_markers() {
+    if ( is_admin() || wp_doing_ajax() || wp_is_json_request() || is_feed() ) {
+        return;
+    }
+
+    ob_start( 'haber_sitesi_strip_conflict_markers_from_string' );
+}
+add_action( 'template_redirect', 'haber_sitesi_buffer_conflict_markers', 0 );
+
 require get_template_directory() . '/inc/customizer.php';
 
 if ( is_admin() ) {
@@ -330,8 +739,6 @@ if ( ! function_exists( 'haber_sitesi_desktop_menu_fallback' ) ) {
         echo '</ul>';
     }
 }
-
-
 
 if ( ! function_exists( 'haber_sitesi_mobile_menu_fallback' ) ) {
     /**

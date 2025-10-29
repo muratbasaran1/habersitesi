@@ -1,25 +1,22 @@
 <?php
 /**
- * Tekil yazı şablonu.
+ * Sayfa şablonu.
  *
  * @package Haber_Sitesi
  */
 
 get_header();
 
-$current_post_id    = get_queried_object_id();
-$sidebar_trending   = haber_sitesi_get_trending_posts( 5, $current_post_id ? [ $current_post_id ] : [] );
+$sidebar_trending  = haber_sitesi_get_trending_posts( 5 );
 $sidebar_categories = haber_sitesi_get_category_overview( 6 );
 
 $latest_items = [];
-
 $latest_query = new WP_Query(
     [
         'post_type'           => 'post',
         'post_status'         => 'publish',
         'posts_per_page'      => 5,
         'ignore_sticky_posts' => 1,
-        'post__not_in'        => $current_post_id ? [ $current_post_id ] : [],
         'no_found_rows'       => true,
     ]
 );
@@ -43,32 +40,22 @@ if ( $latest_query->have_posts() ) {
         aria-valuetext="0%"
     ></span>
 </div>
-<div class="page-screen page-screen--single">
-    <div class="page-shell page-shell--single">
-        <div class="page-layout page-layout--single">
+<div class="page-screen page-screen--page">
+    <div class="page-shell page-shell--page">
+        <div class="page-layout page-layout--page">
             <div class="page-layout__main">
                 <?php if ( have_posts() ) : ?>
                     <?php
                     while ( have_posts() ) :
                         the_post();
-                        get_template_part( 'template-parts/content', 'single' );
-                        ?>
-                        <nav class="single-navigation" aria-label="<?php esc_attr_e( 'Haberler arası dolaşım', 'haber-sitesi' ); ?>">
-                            <?php
-                            the_post_navigation(
-                                [
-                                    'prev_text' => '<span class="single-navigation__label">' . esc_html__( 'Önceki haber', 'haber-sitesi' ) . '</span><span class="single-navigation__title">%title</span>',
-                                    'next_text' => '<span class="single-navigation__label">' . esc_html__( 'Sonraki haber', 'haber-sitesi' ) . '</span><span class="single-navigation__title">%title</span>',
-                                ]
-                            );
+                        get_template_part( 'template-parts/content', 'page' );
+                        if ( comments_open() || get_comments_number() ) :
                             ?>
-                        </nav>
-                        <?php if ( comments_open() || get_comments_number() ) : ?>
-                            <div class="single-comments">
+                            <div class="page-comments">
                                 <?php comments_template(); ?>
                             </div>
-                        <?php endif; ?>
-                        <?php
+                            <?php
+                        endif;
                     endwhile;
                     ?>
                 <?php endif; ?>
@@ -78,7 +65,7 @@ if ( $latest_query->have_posts() ) {
                     <section class="page-card page-card--trending">
                         <div class="page-card__header">
                             <h2 class="page-card__title"><?php esc_html_e( 'Gündemdeki Başlıklar', 'haber-sitesi' ); ?></h2>
-                            <p class="page-card__subtitle"><?php esc_html_e( 'Okurların şu an takip ettiği haberler', 'haber-sitesi' ); ?></p>
+                            <p class="page-card__subtitle"><?php esc_html_e( 'Okurların en çok ilgi gösterdiği haberler', 'haber-sitesi' ); ?></p>
                         </div>
                         <ol class="page-card__list page-card__list--ranked">
                             <?php foreach ( $sidebar_trending as $index => $item ) : ?>
@@ -97,8 +84,8 @@ if ( $latest_query->have_posts() ) {
                 <?php if ( ! empty( $latest_items ) ) : ?>
                     <section class="page-card page-card--latest">
                         <div class="page-card__header">
-                            <h2 class="page-card__title"><?php esc_html_e( 'Masadan Son Dakika', 'haber-sitesi' ); ?></h2>
-                            <p class="page-card__subtitle"><?php esc_html_e( 'Yayınlanan en yeni hikayeler', 'haber-sitesi' ); ?></p>
+                            <h2 class="page-card__title"><?php esc_html_e( 'Son Haber Manşetleri', 'haber-sitesi' ); ?></h2>
+                            <p class="page-card__subtitle"><?php esc_html_e( 'Masadan en güncel beş haber', 'haber-sitesi' ); ?></p>
                         </div>
                         <ul class="page-card__list">
                             <?php foreach ( $latest_items as $item ) : ?>
@@ -117,7 +104,7 @@ if ( $latest_query->have_posts() ) {
                     <section class="page-card page-card--categories">
                         <div class="page-card__header">
                             <h2 class="page-card__title"><?php esc_html_e( 'Kapsam Alanları', 'haber-sitesi' ); ?></h2>
-                            <p class="page-card__subtitle"><?php esc_html_e( 'Ajans masalarındaki dosya yoğunluğu', 'haber-sitesi' ); ?></p>
+                            <p class="page-card__subtitle"><?php esc_html_e( 'Masalardaki dosya yoğunlukları', 'haber-sitesi' ); ?></p>
                         </div>
                         <ul class="page-card__list">
                             <?php foreach ( $sidebar_categories as $category ) : ?>
@@ -135,11 +122,11 @@ if ( $latest_query->have_posts() ) {
                 <section class="page-card page-card--newsletter">
                     <div class="page-card__header">
                         <h2 class="page-card__title"><?php esc_html_e( 'Bültenimize Katılın', 'haber-sitesi' ); ?></h2>
-                        <p class="page-card__subtitle"><?php esc_html_e( 'Günün son değerlendirmesini doğrudan mail kutunuza alın.', 'haber-sitesi' ); ?></p>
+                        <p class="page-card__subtitle"><?php esc_html_e( 'Profesyonel özetleri her akşam posta kutunuzda alın.', 'haber-sitesi' ); ?></p>
                     </div>
                     <form class="page-newsletter" action="<?php echo esc_url( home_url( '/bulten' ) ); ?>" method="get">
-                        <label class="screen-reader-text" for="single-newsletter-email"><?php esc_html_e( 'E-posta adresiniz', 'haber-sitesi' ); ?></label>
-                        <input id="single-newsletter-email" class="page-newsletter__field" type="email" name="email" placeholder="<?php echo esc_attr__( 'ornek@haber.com', 'haber-sitesi' ); ?>" required>
+                        <label class="screen-reader-text" for="page-newsletter-email"><?php esc_html_e( 'E-posta adresiniz', 'haber-sitesi' ); ?></label>
+                        <input id="page-newsletter-email" class="page-newsletter__field" type="email" name="email" placeholder="<?php echo esc_attr__( 'ornek@haber.com', 'haber-sitesi' ); ?>" required>
                         <button class="page-newsletter__button" type="submit"><?php esc_html_e( 'Gelişmeleri Gönder', 'haber-sitesi' ); ?></button>
                     </form>
                 </section>
